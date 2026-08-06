@@ -1,0 +1,46 @@
+/* --- FULLCALENDAR SB ADMIN PRO OVERRIDES --- */
+.fc {
+    font-family: inherit; /* Mengikuti font template (Metropolis/Inter) */
+}
+
+/* Mempercantik border kalender */
+.fc-theme-bootstrap5 .fc-scrollgrid {
+    border-radius: 0.5rem;
+    overflow: hidden;
+    border-color: #e0e5ec !important;
+}
+
+/* Mengatur ukuran judul bulan */
+.fc-toolbar-title {
+    font-size: 1.25rem !important;
+    font-weight: 700 !important;
+    color: #363d47;
+}
+
+/* Tombol navigasi kalender mengikuti warna primary template */
+.fc-button-primary {
+    background-color: #0061f2 !important;
+    border-color: #0061f2 !important;
+    box-shadow: none !important;
+}
+.fc-button-primary:hover, .fc-button-primary:not(:disabled).fc-button-active {
+    background-color: #0051c8 !important;
+    border-color: #0051c8 !important;
+}
+
+/* Desain blok event kegiatan */
+.fc-event {
+    cursor: pointer;
+    border: none !important;
+    padding: 3px 5px;
+    border-radius: 4px;
+    font-weight: 500;
+    transition: opacity 0.2s;
+}
+.fc-event:hover {
+    opacity: 0.85;
+}
+
+.dark-mode .fc-toolbar-title { color: #e0e0e0; }
+.dark-mode .fc-theme-bootstrap5 td, .dark-mode .fc-theme-bootstrap5 th { border-color: #444; }
+

@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>Sistem Kalender Kegiatan - STPM Santa Ursula</title>
+    
+    <!-- Template Core CSS -->
+    <link href="css/styles.css" rel="stylesheet" />
+    
+    <!-- Dependencies untuk Sistem Kalender -->
+    <link href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/x-icon" href="assets/img/favicon.png" />
+    <script data-search-pseudo-elements defer src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/js/all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.28.0/feather.min.js"></script>
+    
+    <style>
+        /* Custom Adjustments */
+        .fc-toolbar-title { font-size: 1.25rem !important; font-weight: 600; }
+        .view-section { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body class="nav-fixed">
+    <!-- Top Navbar -->
+    <nav class="topnav navbar navbar-expand shadow justify-content-between justify-content-sm-start navbar-light bg-white" id="sidenavAccordion">
+        <button class="btn btn-icon btn-transparent-dark order-1 order-lg-0 me-2 ms-lg-2 me-lg-0" id="sidebarToggle"><i data-feather="menu"></i></button>
+        <a class="navbar-brand pe-3 ps-4 ps-lg-2 fw-bold text-primary" href="#">STPM Santa Ursula</a>
+        
+        <ul class="navbar-nav align-items-center ms-auto">
+            <!-- User Dropdown-->
+            <li class="nav-item dropdown no-caret dropdown-user me-3 me-lg-4">
+                <a class="btn btn-icon btn-transparent-dark dropdown-toggle" id="navbarDropdownUserImage" href="javascript:void(0);" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><img class="img-fluid" src="assets/img/illustrations/profiles/profile-1.png" /></a>
+                <div class="dropdown-menu dropdown-menu-end border-0 shadow animated--fade-in-up" aria-labelledby="navbarDropdownUserImage">
+                    <h6 class="dropdown-header d-flex align-items-center">
+                        <img class="dropdown-user-img" src="assets/img/illustrations/profiles/profile-1.png" />
+                        <div class="dropdown-user-details">
+                            <div class="dropdown-user-details-name">Admin STPM</div>
+                            <div class="dropdown-user-details-email">admin@stpm-sanur.ac.id</div>
+                        </div>
+                    </h6>
+                </div>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Sidebar & Content -->
+    <div id="layoutSidenav">
+        <div id="layoutSidenav_nav">
+            <nav class="sidenav shadow-right sidenav-light">
+                <div class="sidenav-menu">
+                    <div class="nav accordion" id="accordionSidenav">
+                        <div class="sidenav-menu-heading">Menu Utama</div>
+                        
+                        <a class="nav-link menu-link active" href="#" data-target="dashboard-view" data-title="Dashboard Analitik" data-icon="activity">
+                            <div class="nav-link-icon"><i data-feather="activity"></i></div>
+                            Dashboard
+                        </a>
+                        <a class="nav-link menu-link" href="#" data-target="calendar-view" data-title="Kalender Kegiatan" data-icon="calendar">
+                            <div class="nav-link-icon"><i data-feather="calendar"></i></div>
+                            Kalender
+                        </a>
+                        <a class="nav-link menu-link" href="#" data-target="table-view" data-title="Manajemen Data Kegiatan" data-icon="grid">
+                            <div class="nav-link-icon"><i data-feather="grid"></i></div>
+                            Data Kegiatan
+                        </a>
+                    </div>
+                </div>
+                <div class="sidenav-footer">
+                    <div class="sidenav-footer-content">
+                        <div class="sidenav-footer-subtitle">Sistem Informasi</div>
+                        <div class="sidenav-footer-title">Kalender Institusi</div>
+                    </div>
+                </div>
+            </nav>
+        </div>
+        
+        <!-- Main Content Area -->
+        <div id="layoutSidenav_content">
+            <main>
+                <!-- Page Header -->
+                <header class="page-header page-header-dark bg-gradient-primary-to-secondary pb-10">
+                    <div class="container-xl px-4">
+                        <div class="page-header-content pt-4">
+                            <div class="row align-items-center justify-content-between">
+                                <div class="col-auto mt-4">
+                                    <h1 class="page-header-title">
+                                        <div class="page-header-icon"><i id="header-icon" data-feather="activity"></i></div>
+                                        <span id="page-title">Dashboard Analitik</span>
+                                    </h1>
+                                    <div class="page-header-subtitle">Overview statistik dan manajemen jadwal kegiatan STPM Santa Ursula</div>
+                                </div>
+<div class="col-auto mt-4 d-flex gap-2">
+    <!-- Input File Tersembunyi -->
+    <input type="file" id="fileCsv" accept=".csv" class="d-none">
+    
+    <!-- Tombol Import -->
+    <button class="btn btn-outline-success fw-bold shadow-sm bg-white" onclick="document.getElementById('fileCsv').click()">
+        <i data-feather="upload" class="me-2"></i> Import CSV
+    </button>
+    
+    <!-- Tombol Tambah Manual -->
+    <button class="btn btn-primary fw-bold shadow-sm" onclick="app.openModal()">
+        <i data-feather="plus" class="me-2"></i> Tambah Kegiatan
+    </button>
+</div>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+                
+                <!-- Page Content -->
+                <div class="container-xl px-4 mt-n10">
+                    
+                    <!-- Loader -->
+                    <div id="app-loader" class="text-center py-5 bg-white rounded shadow-sm mb-4">
+                        <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;"></div>
+                        <h5 class="text-muted">Menyinkronkan data dengan Google Server...</h5>
+                    </div>
+
+                    <div id="app-content" class="d-none">
+                        <!-- VIEW 1: DASHBOARD -->
+                        <div id="dashboard-view" class="view-section">
+                            <div class="row">
+                                <div class="col-lg-6 col-xl-3 mb-4">
+                                    <div class="card bg-primary text-white h-100">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div class="me-3">
+                                                    <div class="text-white-75 small">Total Kegiatan</div>
+                                                    <div class="text-lg fw-bold" id="stat-total">0</div>
+                                                </div>
+                                                <i class="feather-xl text-white-50" data-feather="layers"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-lg-6 col-xl-3 mb-4">
+                                    <div class="card bg-warning text-white h-100">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div class="me-3">
+                                                    <div class="text-white-75 small">Kegiatan Bulan Ini</div>
+                                                    <div class="text-lg fw-bold" id="stat-month">0</div>
+                                                </div>
+                                                <i class="feather-xl text-white-50" data-feather="calendar"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-lg-6 col-xl-3 mb-4">
+                                    <div class="card bg-success text-white h-100">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div class="me-3">
+                                                    <div class="text-white-75 small">Kegiatan Selesai</div>
+                                                    <div class="text-lg fw-bold" id="stat-completed">0</div>
+                                                </div>
+                                                <i class="feather-xl text-white-50" data-feather="check-circle"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-lg-6 col-xl-3 mb-4">
+                                    <div class="card bg-danger text-white h-100">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div class="me-3">
+                                                    <div class="text-white-75 small">Unit Teraktif</div>
+                                                    <div class="text-lg fw-bold fs-6 mt-1" id="stat-busiest">-</div>
+                                                </div>
+                                                <i class="feather-xl text-white-50" data-feather="award"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+<!-- Charts -->
+<div class="row">
+    <!-- Bar Chart -->
+    <div class="col-xl-12 mb-4">
+        <div class="card shadow-sm h-100 border-0">
+            <div class="card-header bg-transparent fw-bold text-primary border-bottom">Distribusi Kegiatan per Bulan</div>
+            <div class="card-body">
+                <!-- Tambahkan wrapper dengan height fix agar grafik tidak membesar -->
+                <div style="position: relative; height: 300px; width: 100%;">
+                    <canvas id="barChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Doughnut Chart -->
+    <div class="col-xl-6 mb-4">
+        <div class="card shadow-sm h-100 border-0">
+            <div class="card-header bg-transparent fw-bold text-primary border-bottom">Proporsi Status Kegiatan</div>
+            <div class="card-body d-flex justify-content-center align-items-center">
+                <!-- Tambahkan wrapper dengan height fix -->
+                <div style="position: relative; height: 300px; width: 100%;">
+                    <canvas id="doughnutChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+
+</div>
+
+
+
+                        </div>
+
+                        <!-- VIEW 2: CALENDAR -->
+                        <div id="calendar-view" class="view-section d-none mb-4">
+                            <div class="card shadow-sm border-0">
+                                <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center py-3">
+                                    <h5 class="mb-0 text-primary fw-bold">
+                                        <i data-feather="calendar" class="me-2"></i> Jadwal Kegiatan Institusi
+                                    </h5>
+                                    <button class="btn btn-sm btn-primary" onclick="app.openModal()">
+                                        <i data-feather="plus" class="me-1"></i> Tambah Event
+                                    </button>
+                                </div>
+                                <div class="card-body p-4">
+                                    <!-- Kontainer utama FullCalendar -->
+                                    <div id="calendar"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- VIEW 3: DATA TABLES -->
+                        <div id="table-view" class="view-section d-none mb-4">
+                            <div class="card shadow-sm">
+                                <div class="card-header">Database Kegiatan Institusi</div>
+                                <div class="card-body">
+                                    <table id="dataTable" class="table table-striped table-hover w-100">
+                                        <thead>
+                                            <tr>
+                                                <th>No</th><th>Unit</th><th>Nama Kegiatan</th><th>Mulai</th><th>Selesai</th><th>PIC</th><th>Lokasi</th><th>Status</th><th>Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+
+
+                        
+                    </div>
+
+
+
+                </div>
+            </main>
+            
+            <footer class="footer-admin mt-auto footer-light">
+                <div class="container-xl px-4">
+                    <div class="row">
+                        <div class="col-md-6 small">Copyright &copy; STPM Santa Ursula 2026</div>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Modal Form Kegiatan -->
+    <div class="modal fade" id="kegiatanModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Formulir Kegiatan</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="kegiatanForm">
+                    <div class="modal-body">
+                        <input type="hidden" id="event_id">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Unit Kerja</label>
+                                <select class="form-select select2" id="unit" required>
+                                    <option value="">Pilih Unit...</option>
+                                    <option value="Ketua">Ketua</option>
+                                    <option value="Sekretariat">Sekretariat</option>
+                                    <option value="LP2M">LP2M</option>
+                                    <option value="LPM">LPM</option>
+                                    <option value="Ilmu Pemerintahan">Program Studi Ilmu Pemerintahan</option>
+                                    <option value="Pembangunan Sosial">Program Studi Pembangunan Sosial</option>
+                                    <option value="BAAK">BAAK</option>
+                                    <option value="Kemahasiswaan">Kemahasiswaan</option>
+                                    <option value="Keuangan">Keuangan</option>
+                                    <option value="Perpustakaan">Perpustakaan</option>
+                                    <option value="Laboratorium">Laboratorium</option>
+                                    <option value="Humas">Humas</option>
+                                    <option value="PMB">PMB</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Nama Kegiatan</label>
+                                <input type="text" class="form-control" id="nama_kegiatan" required placeholder="Contoh: Rapat Koordinasi">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Tanggal & Waktu Mulai</label>
+                                <input type="text" class="form-control flatpickr" id="tanggal_mulai" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Tanggal & Waktu Selesai</label>
+                                <input type="text" class="form-control flatpickr" id="tanggal_selesai" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">PIC / Penanggung Jawab</label>
+                                <input type="text" class="form-control" id="pic" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Lokasi</label>
+                                <input type="text" class="form-control" id="lokasi" required>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">Status Pelaksanaan</label>
+                                <select class="form-select" id="status" required>
+                                    <option value="Perencanaan">Perencanaan</option>
+                                    <option value="Berjalan">Berjalan</option>
+                                    <option value="Selesai">Selesai</option>
+                                    <option value="Ditunda">Ditunda</option>
+                                </select>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">Deskripsi</label>
+                                <textarea class="form-control" id="deskripsi" rows="3" placeholder="Rincian agenda..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary" id="btnSave">Simpan Kegiatan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Core Template Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/scripts.js"></script> <!-- JANGAN DIHAPUS, ini bawaan template untuk Sidebar Toggle dll -->
+    
+    <!-- Dependencies App Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+    
+    <!-- Plugins -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <!-- Tambahkan di area plugin -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <!-- Custom Logic -->
+    <script src="js/dashboard-charts.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
