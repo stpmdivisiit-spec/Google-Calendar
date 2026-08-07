@@ -1,46 +1,126 @@
-/* --- FULLCALENDAR SB ADMIN PRO OVERRIDES --- */
+/* ==========================================================================
+   GOOGLE CALENDAR UI CLONE (FULLCALENDAR OVERRIDES)
+   ========================================================================== */
+
+/* Tipografi Utama Kalender */
 .fc {
-    font-family: inherit; /* Mengikuti font template (Metropolis/Inter) */
+    font-family: 'Google Sans', Roboto, Arial, sans-serif !important;
+    color: #3c4043;
 }
 
-/* Mempercantik border kalender */
-.fc-theme-bootstrap5 .fc-scrollgrid {
-    border-radius: 0.5rem;
-    overflow: hidden;
-    border-color: #e0e5ec !important;
-}
-
-/* Mengatur ukuran judul bulan */
+/* Header & Judul Bulan */
 .fc-toolbar-title {
-    font-size: 1.25rem !important;
-    font-weight: 700 !important;
-    color: #363d47;
+    font-size: 1.375rem !important;
+    font-weight: 400 !important;
+    color: #3c4043;
+}
+.fc-toolbar.fc-header-toolbar {
+    margin-bottom: 1.5rem !important;
 }
 
-/* Tombol navigasi kalender mengikuti warna primary template */
-.fc-button-primary {
-    background-color: #0061f2 !important;
-    border-color: #0061f2 !important;
+/* Gaya Tombol ala Google (Minimalist Outline) */
+.fc .fc-button-primary {
+    background-color: #ffffff !important;
+    border: 1px solid #dadce0 !important;
+    color: #3c4043 !important;
+    text-transform: capitalize;
+    font-weight: 500;
+    font-size: 0.875rem;
+    padding: 0.4rem 1rem;
+    border-radius: 4px;
+    box-shadow: none !important;
+    transition: background-color 0.2s;
+}
+.fc .fc-button-primary:hover {
+    background-color: #f1f3f4 !important;
+}
+.fc .fc-button-primary:not(:disabled).fc-button-active, 
+.fc .fc-button-primary:not(:disabled):active {
+    background-color: #e8eaed !important;
+    border-color: #dadce0 !important;
+    color: #1a73e8 !important;
+}
+.fc .fc-button-group > .fc-button {
+    margin-left: -1px;
+}
+
+/* Garis Tabel Grid yang lebih halus */
+.fc-theme-standard td, .fc-theme-standard th, .fc-theme-standard .fc-scrollgrid {
+    border-color: #dadce0 !important;
+}
+
+/* Nama Hari di atas (MIN, SEN, SEL...) */
+.fc-col-header-cell-cushion {
+    font-weight: 500;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: #70757a;
+    padding: 8px 4px !important;
+}
+
+/* Angka Tanggal */
+.fc-daygrid-day-number {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #3c4043;
+    padding: 8px 8px !important;
+    margin: 4px;
+}
+
+/* Lingkaran Biru untuk Hari Ini (Current Day) */
+.fc-day-today {
+    background-color: transparent !important; /* Hilangkan background kuning bawaan */
+}
+.fc-day-today .fc-daygrid-day-number {
+    background-color: #1a73e8 !important;
+    color: #ffffff !important;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 4px auto 4px auto; /* Posisikan ke tengah (opsional, tergantung selera) */
+}
+/* Kembalikan posisi angka ke kanan atas sesuai default kalender */
+.fc-daygrid-day-top {
+    justify-content: flex-end;
+}
+
+/* Desain Blok Event Kegiatan (Solid Block) */
+.fc-h-event {
+    background-color: #1a73e8; /* Warna default jika tidak ada mapping */
+    border: none !important;
+    border-radius: 4px !important;
+    padding: 2px 6px;
+    margin-bottom: 2px;
     box-shadow: none !important;
 }
-.fc-button-primary:hover, .fc-button-primary:not(:disabled).fc-button-active {
-    background-color: #0051c8 !important;
-    border-color: #0051c8 !important;
+.fc-event-title {
+    font-size: 0.75rem !important;
+    font-weight: 500 !important;
+    color: #ffffff;
+}
+.fc-event-main {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-/* Desain blok event kegiatan */
-.fc-event {
-    cursor: pointer;
-    border: none !important;
-    padding: 3px 5px;
-    border-radius: 4px;
-    font-weight: 500;
-    transition: opacity 0.2s;
-}
+/* Efek saat event disentuh/hover */
 .fc-event:hover {
-    opacity: 0.85;
+    cursor: pointer;
+    filter: brightness(0.9);
 }
 
-.dark-mode .fc-toolbar-title { color: #e0e0e0; }
-.dark-mode .fc-theme-bootstrap5 td, .dark-mode .fc-theme-bootstrap5 th { border-color: #444; }
-
+/* Popover "More" untuk hari yang padat kegiatan */
+.fc-popover {
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+    border: none !important;
+}
+.fc-popover-header {
+    background-color: #ffffff !important;
+    font-weight: 500;
+    padding: 10px 12px;
+}

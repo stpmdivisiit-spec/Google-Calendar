@@ -81,27 +81,85 @@ const app = {
         }
     },
 
-    refreshUI: function() {
+
+refreshUI: function() {
         if (this.table) {
             this.table.clear();
             this.table.rows.add(this.eventsData);
             this.table.draw();
         }
         if (this.calendar) {
-            const formattedEvents = this.eventsData.map(item => ({
-                id: item['ID (UUID)'],
-                title: `[${item.Unit}] ${item['Nama Kegiatan']}`,
-                start: item['Tanggal Mulai'], // Format baru Date only
-                end: item['Tanggal Selesai'],
-                backgroundColor: this.getUnitColorCode(item.Unit),
-                extendedProps: item
-            }));
+            const formattedEvents = this.formatEventsForCalendar(this.eventsData);
             this.calendar.removeAllEvents();
             this.calendar.addEventSource(formattedEvents);
         }
         DashboardAnalytics.populateCounters(this.eventsData);
-        DashboardAnalytics.render2DCharts(this.eventsData);
+        DashboardAnalytics.renderCharts(this.eventsData);
+        DashboardAnalytics.detectConflicts(this.eventsData);
     },
+
+    // Fungsi Bantuan Baru: Memformat tanggal agar menjadi blok warna penuh (All Day)
+    formatEventsForCalendar: function(data) {
+        return data.map(item => {
+            // Konversi ke objek Date
+            const startDate = new Date(item['Tanggal Mulai']);
+            const endDate = new Date(item['Tanggal Selesai']);
+            
+            // FULLCALENDAR FIX: Tambahkan 1 hari ke Tanggal Selesai agar blok warna dirender hingga akhir hari
+            const exclusiveEndDate = new Date(endDate);
+            exclusiveEndDate.setDate(exclusiveEndDate.getDate() + 1);
+
+            // Ekstrak hanya YYYY-MM-DD
+            const startStr = startDate.toISOString().split('T')[0];
+            const endStr = exclusiveEndDate.toISOString().split('T')[0];
+
+            return {
+                id: item['ID (UUID)'],
+                title: `[${item.Unit}] ${item['Nama Kegiatan']}`,
+                start: startStr,
+                end: endStr,
+                allDay: true, // Memaksa FullCalendar menjadikannya blok warna solid, tanpa teks jam
+                backgroundColor: this.getUnitColorCode(item.Unit),
+                borderColor: this.getUnitColorCode(item.Unit),
+                textColor: '#ffffff',
+                extendedProps: item
+            };
+        });
+    },
+
+    initCalendar: function() {
+        const calElement = document.getElementById('calendar');
+        const formattedEvents = this.formatEventsForCalendar(this.eventsData);
+
+        this.calendar = new FullCalendar.Calendar(calElement, {
+            // HAPUS themeSystem: 'bootstrap5' agar kita bisa mendesainnya bergaya Google Calendar
+            initialView: 'dayGridMonth',
+            firstDay: 0, // 0 = Minggu, 1 = Senin (Menyesuaikan Google Calendar)
+            headerToolbar: {
+                left: 'today prev,next',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay' // Sesuaikan gaya minimalis
+            },
+            buttonText: { today: 'Hari ini', month: 'Bulan', week: 'Minggu', day: 'Hari' },
+            events: formattedEvents,
+            editable: true,
+            droppable: true,
+            selectable: true,
+            dayMaxEvents: true, // Akan memunculkan "more..." jika kegiatan menumpuk di 1 hari
+            
+            dateClick: (info) => {
+                this.openModal();
+                $('#tanggal_mulai').val(info.dateStr);
+            },
+            eventClick: (info) => { this.editEvent(info.event.id); },
+            eventDrop: (info) => { this.syncDragDrop(info.event); },
+            eventResize: (info) => { this.syncDragDrop(info.event); }
+        });
+    },
+
+
+
+
 
 initDataTables: function() {
         this.table = $('#dataTable').DataTable({
@@ -154,40 +212,7 @@ initDataTables: function() {
         });
     },
 
-    initCalendar: function() {
-        const calElement = document.getElementById('calendar');
-        const formattedEvents = this.eventsData.map(item => ({
-            id: item['ID (UUID)'],
-            title: `[${item.Unit}] ${item['Nama Kegiatan']}`,
-            start: item['Tanggal Mulai'],
-            end: item['Tanggal Selesai'],
-            backgroundColor: this.getUnitColorCode(item.Unit),
-            extendedProps: item
-        }));
-
-        this.calendar = new FullCalendar.Calendar(calElement, {
-            themeSystem: 'bootstrap5',
-            initialView: 'dayGridMonth',
-            headerToolbar: {
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
-            },
-            buttonText: { today: 'Hari Ini', month: 'Bulan', week: 'Minggu', day: 'Hari', list: 'Agenda' },
-            events: formattedEvents,
-            editable: true,
-            droppable: true,
-            selectable: true,
-            
-            dateClick: (info) => {
-                this.openModal();
-                $('#tanggal_mulai').val(info.dateStr); // Cukup Set Tanggal saja
-            },
-            eventClick: (info) => { this.editEvent(info.event.id); },
-            eventDrop: (info) => { this.syncDragDrop(info.event); },
-            eventResize: (info) => { this.syncDragDrop(info.event); }
-        });
-    },
+  
 
     getUnitColorCode: function(unit) {
         const colors = {
