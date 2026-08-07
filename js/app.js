@@ -59,15 +59,79 @@ const app = {
             e.preventDefault();
             this.saveEvent();
         });
+
+
+    $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+            if (settings.nTable.id !== 'dataTable') return true;
+
+            const filterUnit = $('#filterUnit').val();
+            const filterDate = $('#filterDate').val(); 
+            
+            // Ambil data mentah (original row data) dari array
+            const rowData = app.table.row(dataIndex).data(); 
+            if (!rowData) return true;
+
+            // 1. Pengecekan Unit
+            const unitMatch = filterUnit === "" || rowData.Unit === filterUnit;
+            
+            // 2. Pengecekan Rentang Tanggal
+            let dateMatch = true;
+            if (filterDate) {
+                const eventStart = new Date(rowData['Tanggal Mulai']).setHours(0,0,0,0);
+
+                if (filterDate.includes(' to ')) {
+                    // Jika memilih rentang (Start to End)
+                    const dates = filterDate.split(' to ');
+                    const startFilter = new Date(dates[0]).setHours(0,0,0,0);
+                    const endFilter = new Date(dates[1]).setHours(23,59,59,999);
+                    dateMatch = (eventStart >= startFilter && eventStart <= endFilter);
+                } else {
+                    // Jika hanya memilih satu tanggal spesifik
+                    const targetDate = new Date(filterDate).setHours(0,0,0,0);
+                    dateMatch = (eventStart === targetDate);
+                }
+            }
+
+            return unitMatch && dateMatch;
+        });
+
+        // Trigger Filter Saat Dropdown/Tanggal Berubah
+        $('#filterUnit, #filterDate').on('change', () => {
+            if (this.table) this.table.draw();
+        });
+
+        // Trigger Tombol Reset Filter
+        $('#btnResetFilter').on('click', () => {
+            $('#filterUnit').val('').trigger('change');
+            document.querySelector('#filterDate')._flatpickr.clear();
+            if (this.table) this.table.draw();
+        });
+
+        // Form Submit
+        $('#kegiatanForm').on('submit', (e) => {
+            e.preventDefault();
+            this.saveEvent();
+        });
+
+
+
+
+
+        
     },
 
     setupPlugins: function() {
+        // Plugin Form Tambah Kegiatan
         $('.select2').select2({ theme: 'bootstrap-5', dropdownParent: $('#kegiatanModal') });
-        
-        // PENGATURAN BARU FLATPICKR: Hilangkan deteksi Jam/Waktu
-        $('.flatpickr-date').flatpickr({
-            enableTime: false,
-            dateFormat: "Y-m-d"
+        $('.flatpickr-date').flatpickr({ enableTime: false, dateFormat: "Y-m-d" });
+
+        // Plugin Filter Tabel
+        $('.select2-filter').select2({ theme: 'bootstrap-5' });
+        $('.flatpickr-range').flatpickr({
+            mode: "range",          // Mode Rentang Tanggal
+            dateFormat: "Y-m-d",
+            altInput: true,         // Menampilkan format yang mudah dibaca
+            altFormat: "d M Y"
         });
     },
 
@@ -82,7 +146,7 @@ const app = {
     },
 
 
-refreshUI: function() {
+    refreshUI: function() {
         if (this.table) {
             this.table.clear();
             this.table.rows.add(this.eventsData);
@@ -161,7 +225,7 @@ refreshUI: function() {
 
 
 
-initDataTables: function() {
+    initDataTables: function() {
         this.table = $('#dataTable').DataTable({
             data: this.eventsData,
             responsive: true,

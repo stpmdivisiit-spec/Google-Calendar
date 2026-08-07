@@ -8,7 +8,6 @@
     
     <!-- Template Core CSS -->
     <link href="css/styles.css" rel="stylesheet" />
-    <link href="css/styles2.css" rel="stylesheet" />
     
     <!-- Dependencies untuk Sistem Kalender -->
     <link href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css" rel="stylesheet">
@@ -234,7 +233,7 @@
     <!-- Analitik Ekstra Row -->
     <div class="row g-3">
         <!-- Bar Chart Horizontal untuk Beban Kerja PIC -->
-        <div class="col-xl-6">
+        <div class="col-xl-12">
             <div class="card shadow-sm h-100 border-0">
                 <div class="card-header bg-transparent fw-bold text-primary border-bottom">Beban Kerja PIC (Keseluruhan)</div>
                 <div class="card-body">
@@ -245,7 +244,7 @@
             </div>
         </div>
         <!-- Tabel Log Tabrakan -->
-        <div class="col-xl-6">
+        <div class="col-xl-12">
             <div class="card shadow-sm h-100 border-0 border-start border-4 border-danger">
                 <div class="card-header bg-transparent fw-bold text-danger border-bottom d-flex justify-content-between align-items-center">
                     <span>Log Tabrakan Jadwal</span>
@@ -290,37 +289,75 @@
                         </div>
 
                         <!-- VIEW 3: DATA TABLES -->
-                        <div id="table-view" class="view-section d-none mb-4">
-                            <div class="card shadow-sm">
-                                <div class="card-header">Database Kegiatan Institusi</div>
-                                <div class="card-body">
+
+
+<!-- VIEW 3: DATA TABLES -->
+<div id="table-view" class="view-section d-none mb-4">
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center py-3">
+            <h5 class="mb-0 text-primary fw-bold">
+                <i data-feather="grid" class="me-2"></i> Database Kegiatan Institusi
+            </h5>
+        </div>
+        <div class="card-body p-4">
+            
+            <!-- BILAH FILTER (UNIT & RENTANG TANGGAL) -->
+            <div class="row g-3 mb-4 align-items-end bg-light p-3 rounded border border-light">
+                <div class="col-md-4">
+                    <label class="form-label fw-bold text-muted small">Filter Unit Kerja</label>
+                    <select class="form-select select2-filter" id="filterUnit">
+                        <option value="">Semua Unit</option>
+                        <option value="Akademik dan Kerja Sama">Akademik dan Kerja Sama</option>
+                        <option value="Non Akademik dan Kemahasiswaan">Non Akademik dan Kemahasiswaan</option>
+                        <option value="Lembaga Penjaminan Mutu (LPM)">Lembaga Penjaminan Mutu (LPM)</option>
+                        <option value="LP2M">LP2M</option>
+                        <option value="Program Studi Pembangunan Sosial">Program Studi Pembangunan Sosial</option>
+                        <option value="Program Studi Ilmu Pemerintahan">Program Studi Ilmu Pemerintahan</option>
+                        <option value="Sekretariat">Sekretariat</option>
+                        <option value="Unit Pangkalan Data & IT">Unit Pangkalan Data & IT</option>
+                        <option value="Campus Ministry">Campus Ministry</option>
+                        <option value="Penerimaan Mahasiswa Baru (PMB)">Penerimaan Mahasiswa Baru (PMB)</option>
+                        <option value="UPT Perpustakaan">UPT Perpustakaan</option>
+                    </select>
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label fw-bold text-muted small">Rentang Tanggal Pelaksanaan</label>
+                    <!-- altInput agar tampilan tanggal cantik, tapi value aslinya tetap YYYY-MM-DD -->
+                    <input type="text" class="form-control flatpickr-range bg-white" id="filterDate" placeholder="Pilih rentang tanggal (Mulai - Selesai)...">
+                </div>
+                <div class="col-md-3">
+                    <button class="btn btn-secondary w-100 fw-bold" id="btnResetFilter">
+                        <i class="fas fa-sync-alt me-2"></i> Reset Filter
+                    </button>
+                </div>
+            </div>
+
+            <!-- TABEL DATA -->
+            <div class="table-responsive">
+                <table id="dataTable" class="table table-striped table-hover w-100 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="text-center">No</th>
+                            <th>Unit Kerja</th>
+                            <th>Nama Kegiatan</th>
+                            <th>Mulai</th>
+                            <th>Selesai</th>
+                            <th>PIC</th>
+                            <th class="text-center">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            
+        </div>
+    </div>
+</div>
 
 
 
-<table id="dataTable" class="table table-striped table-hover w-100 align-middle">
-    <thead class="table-light">
-        <tr>
-            <th class="text-center">No</th>
-            <th>Unit Kerja</th>
-            <th>Nama Kegiatan</th>
-            <th>Mulai</th>
-            <th>Selesai</th>
-            <th>PIC</th>
-            <th class="text-center">Aksi</th>
-        </tr>
-    </thead>
-    <tbody></tbody>
-</table>
 
 
-
-
-
-
-
-                                </div>
-                            </div>
-                        </div>
 
 
 
