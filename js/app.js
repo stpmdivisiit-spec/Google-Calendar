@@ -235,7 +235,11 @@ initDataTables: function() {
         $('#kegiatanModal').modal('show');
     },
 
-    saveEvent: async function() {
+
+
+
+saveEvent: function() {
+        // 1. Ambil data dari form
         const payload = {
             id: $('#event_id').val(),
             unit: $('#unit').val(),
@@ -247,7 +251,59 @@ initDataTables: function() {
 
         const action = payload.id ? 'update' : 'add';
         const btn = $('#btnSave');
-        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Memproses...');
+
+        // 2. Logika Deteksi Tabrakan Jadwal (Overlap Detection)
+        const newStart = new Date(payload.tanggal_mulai).getTime();
+        const newEnd = new Date(payload.tanggal_selesai).getTime();
+        let conflictingEvents = [];
+
+        // Cek data yang ada di memori lokal
+        this.eventsData.forEach(event => {
+            // Jangan periksa tabrakan dengan dirinya sendiri jika sedang dalam mode "Edit"
+            if (payload.id && event['ID (UUID)'] === payload.id) return;
+
+            const existStart = new Date(event['Tanggal Mulai']).getTime();
+            const existEnd = new Date(event['Tanggal Selesai']).getTime();
+
+            // Rumus mendeteksi irisan tanggal (Start A <= End B DAN Start B <= End A)
+            if (newStart <= existEnd && existStart <= newEnd) {
+                conflictingEvents.push(`• <b>${event['Nama Kegiatan']}</b> <span class="text-primary">(${event.Unit})</span>`);
+            }
+        });
+
+        // 3. Tampilkan Pop-up jika ada tabrakan
+        if (conflictingEvents.length > 0) {
+            Swal.fire({
+                title: '⚠️ Peringatan Tabrakan Jadwal',
+                html: `
+                    <div class="text-start mb-2">Tanggal kegiatan ini berbenturan dengan kegiatan berikut:</div>
+                    <div class="text-start bg-light p-2 rounded mb-3" style="max-height: 120px; overflow-y: auto; font-size: 0.9rem;">
+                        ${conflictingEvents.join('<br>')}
+                    </div>
+                    <div class="text-start">Apakah Anda yakin ingin tetap menyimpannya? Anda bisa mengeditnya lagi nanti.</div>
+                `,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#0d6efd',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="fas fa-save me-1"></i> Ya, Tetap Simpan',
+                cancelButtonText: 'Batal',
+                reverseButtons: true // Memindahkan tombol Batal ke kiri
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Jika pengguna memaksa simpan, eksekusi penyimpanan ke server
+                    this.executeSaveToServer(action, payload, btn);
+                }
+            });
+        } else {
+            // Jika tidak ada tabrakan, langsung simpan tanpa peringatan
+            this.executeSaveToServer(action, payload, btn);
+        }
+    },
+
+    // Fungsi terpisah untuk melakukan pengiriman data ke Google Apps Script
+    executeSaveToServer: async function(action, payload, btn) {
+        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Memproses...');
 
         try {
             const response = await fetch(GAS_WEB_APP_URL, {
@@ -257,8 +313,10 @@ initDataTables: function() {
             const result = await response.json();
             
             if (result.status === 'success') {
-                this.toast('Berhasil disimpan!', 'success');
+                this.toast('Kegiatan berhasil disimpan!', 'success');
                 $('#kegiatanModal').modal('hide');
+                
+                // Minta data terbaru dari server & gambar ulang UI (TANPA RELOAD HALAMAN)
                 await this.loadData();
                 this.refreshUI(); 
             } else {
@@ -270,6 +328,18 @@ initDataTables: function() {
             btn.prop('disabled', false).text('Simpan Kegiatan');
         }
     },
+
+
+
+
+
+
+
+
+
+
+
+
 
     deleteEvent: function(id) {
         Swal.fire({

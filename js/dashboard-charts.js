@@ -1,69 +1,161 @@
 const DashboardAnalytics = {
     barChartInstance: null,
     doughnutChartInstance: null,
+    picBarChartInstance: null,
 
     init: function(data) {
+        // Render feather icons for new cards
+        if (typeof feather !== 'undefined') feather.replace();
+        
         this.populateCounters(data);
-        this.render2DCharts(data);
+        this.renderCharts(data);
+        this.detectConflicts(data);
     },
 
     populateCounters: function(data) {
-        $('#stat-total').text(data.length);
-        const currentMonth = new Date().getMonth();
-        $('#stat-month').text(data.filter(d => new Date(d['Tanggal Mulai']).getMonth() === currentMonth).length);
-        
-        // Status dihapus, jadi kolom ini hanya menampilkan kegiatan yang akan datang
-        const futureCount = data.filter(d => new Date(d['Tanggal Mulai']) >= new Date()).length;
-        $('#stat-completed').text(futureCount).siblings('.text-muted').text('Kegiatan Akan Datang');
+        const currentDate = new Date();
+        const currentMonth = currentDate.getMonth();
+        const currentYear = currentDate.getFullYear();
 
-        const unitFrequency = {};
-        data.forEach(d => { unitFrequency[d.Unit] = (unitFrequency[d.Unit] || 0) + 1; });
-        const topUnit = Object.keys(unitFrequency).sort((a,b) => unitFrequency[b] - unitFrequency[a])[0];
-        $('#stat-busiest').text(topUnit || '-');
+        // 1. Total & Kegiatan Datang
+        $('#stat-total').text(data.length);
+        const futureCount = data.filter(d => new Date(d['Tanggal Mulai']) >= currentDate).length;
+        $('#stat-upcoming').text(futureCount);
+
+        // Filter data khusus bulan ini
+        const thisMonthData = data.filter(d => {
+            const dDate = new Date(d['Tanggal Mulai']);
+            return dDate.getMonth() === currentMonth && dDate.getFullYear() === currentYear;
+        });
+        $('#stat-month').text(thisMonthData.length);
+
+        // 2. Unit Teraktif (Bulan Ini)
+        const unitFreq = {};
+        thisMonthData.forEach(d => { unitFreq[d.Unit] = (unitFreq[d.Unit] || 0) + 1; });
+        const topUnit = Object.keys(unitFreq).sort((a,b) => unitFreq[b] - unitFreq[a])[0];
+        $('#stat-busiest-unit').text(topUnit || 'Belum Ada Data');
+
+        // 3. PIC Teraktif (Bulan Ini)
+        const picFreq = {};
+        thisMonthData.forEach(d => { picFreq[d.PIC] = (picFreq[d.PIC] || 0) + 1; });
+        const topPIC = Object.keys(picFreq).sort((a,b) => picFreq[b] - picFreq[a])[0];
+        $('#stat-busiest-pic').text(topPIC ? topPIC.split(',')[0] : 'Belum Ada Data'); // Ambil nama depan saja agar tidak kepanjangan
     },
 
-    render2DCharts: function(data) {
-        // Ekstraksi data Unit untuk chart lingkaran
+    detectConflicts: function(data) {
+        let conflicts = [];
+        
+        // Algoritma mendeteksi irisan tanggal (overlap)
+        for (let i = 0; i < data.length; i++) {
+            for (let j = i + 1; j < data.length; j++) {
+                let start1 = new Date(data[i]['Tanggal Mulai']).getTime();
+                let end1 = new Date(data[i]['Tanggal Selesai']).getTime();
+                let start2 = new Date(data[j]['Tanggal Mulai']).getTime();
+                let end2 = new Date(data[j]['Tanggal Selesai']).getTime();
+
+                // Logika Overlap: Start A <= End B DAN Start B <= End A
+                if (start1 <= end2 && start2 <= end1) {
+                    conflicts.push({
+                        eventA: data[i],
+                        eventB: data[j]
+                    });
+                }
+            }
+        }
+
+        // Update UI Angka Tabrakan
+        $('#stat-conflicts').text(conflicts.length);
+        $('#badge-conflict-count').text(conflicts.length);
+
+        // Render List Tabrakan ke dalam kotak
+        const listContainer = $('#conflict-list');
+        listContainer.empty();
+
+        if (conflicts.length === 0) {
+            listContainer.append('<div class="p-4 text-center text-muted small"><i class="fas fa-check-circle text-success me-2"></i>Jadwal aman, tidak ada kegiatan yang bertabrakan.</div>');
+        } else {
+            conflicts.forEach(c => {
+                const dateStr = new Date(c.eventA['Tanggal Mulai']).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+                listContainer.append(`
+                    <div class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between mb-1">
+                            <h6 class="mb-0 fw-bold text-danger">⚠️ Tabrakan Terdeteksi</h6>
+                            <small class="text-muted fw-bold">${dateStr}</small>
+                        </div>
+                        <div class="small mb-1">
+                            <b>1.</b> ${c.eventA['Nama Kegiatan']} <span class="text-primary">(${c.eventA.Unit})</span>
+                        </div>
+                        <div class="small">
+                            <b>2.</b> ${c.eventB['Nama Kegiatan']} <span class="text-primary">(${c.eventB.Unit})</span>
+                        </div>
+                    </div>
+                `);
+            });
+        }
+    },
+
+    renderCharts: function(data) {
         const unitMap = {};
+        const picMap = {};
         const monthlyMap = new Array(12).fill(0);
 
         data.forEach(d => {
             unitMap[d.Unit] = (unitMap[d.Unit] || 0) + 1;
+            picMap[d.PIC] = (picMap[d.PIC] || 0) + 1;
             const date = new Date(d['Tanggal Mulai']);
             monthlyMap[date.getMonth()]++;
         });
 
-        const primaryColor = 'rgba(13, 110, 253, 0.9)';
+        const primaryColor = 'rgba(13, 110, 253, 0.85)';
+        const bgColors = ['#0d6efd', '#dc3545', '#6f42c1', '#198754', '#0dcaf0', '#fd7e14', '#ffc107', '#20c997', '#e83e8c', '#6610f2', '#d63384'];
 
+        // Bersihkan instance lama agar tidak terjadi glitch saat refresh data
         if (this.barChartInstance) this.barChartInstance.destroy();
         if (this.doughnutChartInstance) this.doughnutChartInstance.destroy();
+        if (this.picBarChartInstance) this.picBarChartInstance.destroy();
 
-        // Bar Chart - Distribusi Bulanan
+        // 1. Bar Chart - Distribusi Bulanan
         this.barChartInstance = new Chart(document.getElementById('barChart'), {
             type: 'bar',
             data: {
                 labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'],
-                datasets: [{ label: 'Jumlah Kegiatan', data: monthlyMap, backgroundColor: primaryColor, borderRadius: 4 }]
+                datasets: [{ label: 'Total Kegiatan', data: monthlyMap, backgroundColor: primaryColor, borderRadius: 4 }]
             },
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
         });
 
-        // Doughnut Chart - Berubah menjadi Distribusi Unit
-        const bgColors = ['#0d6efd', '#dc3545', '#6f42c1', '#198754', '#0dcaf0', '#fd7e14', '#ffc107', '#20c997', '#e83e8c', '#6610f2'];
-        $('#doughnutChart').parent().parent().siblings('.card-header').text('Proporsi Kegiatan per Unit');
-        
+        // 2. Doughnut Chart - Proporsi Unit
         this.doughnutChartInstance = new Chart(document.getElementById('doughnutChart'), {
             type: 'doughnut',
             data: {
                 labels: Object.keys(unitMap),
-                datasets: [{
-                    data: Object.values(unitMap),
-                    backgroundColor: bgColors.slice(0, Object.keys(unitMap).length)
-                }]
+                datasets: [{ data: Object.values(unitMap), backgroundColor: bgColors.slice(0, Object.keys(unitMap).length) }]
             },
             options: {
                 responsive: true, maintainAspectRatio: false, cutout: '65%',
-                plugins: { legend: { position: 'right', labels: { boxWidth: 12 } } }
+                plugins: { legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } } }
+            }
+        });
+
+        // 3. Horizontal Bar Chart - Top PIC Workload (Top 10)
+        // Sort PIC berdasarkan jumlah kegiatan terbanyak
+        const sortedPIC = Object.keys(picMap).sort((a,b) => picMap[b] - picMap[a]).slice(0, 10);
+        const sortedPICData = sortedPIC.map(pic => picMap[pic]);
+        // Format label nama agar tidak terlalu panjang (Ambil 2 kata pertama)
+        const shortLabels = sortedPIC.map(pic => pic.split(' ').slice(0, 2).join(' '));
+
+        this.picBarChartInstance = new Chart(document.getElementById('picBarChart'), {
+            type: 'bar', // Menggunakan indexAxis: 'y' untuk Chart.js v3+ agar menjadi horizontal
+            data: {
+                labels: shortLabels,
+                datasets: [{ label: 'Jumlah Kegiatan', data: sortedPICData, backgroundColor: '#0dcaf0', borderRadius: 4 }]
+            },
+            options: {
+                indexAxis: 'y', // Membalik sumbu menjadi horizontal
+                responsive: true, 
+                maintainAspectRatio: false, 
+                plugins: { legend: { display: false } },
+                scales: { x: { ticks: { stepSize: 1 } } } // Agar skala x berupa bilangan bulat (1, 2, 3...)
             }
         });
     }
