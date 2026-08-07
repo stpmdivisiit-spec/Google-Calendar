@@ -1,14 +1,22 @@
+/**
+ * KONFIGURASI UTAMA
+ * URL Deployment Google Apps Script
+ */
 const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxb_eQbMQtpR3sS6IZiMLqcIzOjtzB2RZ9CSIDr6Yn9UHdTUw4XIw-nwsOIpXK8xLYucg/exec'; 
 
 const app = {
-    eventsData: [], table: null, calendar: null,
+    eventsData: [],
+    table: null,
+    calendar: null,
 
     init: async function() {
-        this.setupTemplateInteractions();
         this.setupPlugins();
+        this.setupDataTablesFilter(); // Inisialisasi filter kustom sebelum tabel dirender
+        this.setupTemplateInteractions();
         
         await this.loadData();
         
+        // Sembunyikan loader dan tampilkan konten utama
         $('#app-loader').addClass('d-none');
         $('#app-content').removeClass('d-none');
         
@@ -17,17 +25,71 @@ const app = {
         DashboardAnalytics.init(this.eventsData);
     },
 
+    setupPlugins: function() {
+        // Plugin Form Tambah Kegiatan
+        $('.select2').select2({ theme: 'bootstrap-5', dropdownParent: $('#kegiatanModal') });
+        $('.flatpickr-date').flatpickr({ enableTime: false, dateFormat: "Y-m-d" });
+
+        // Plugin Filter Tabel
+        $('.select2-filter').select2({ theme: 'bootstrap-5' });
+        $('.flatpickr-range').flatpickr({
+            mode: "range",          
+            dateFormat: "Y-m-d",
+            altInput: true,         
+            altFormat: "d M Y"
+        });
+    },
+
+    setupDataTablesFilter: function() {
+        // Mendaftarkan logika pencarian kustom ke DataTables
+        $.fn.dataTable.ext.search.push((settings, data, dataIndex) => {
+            if (settings.nTable.id !== 'dataTable') return true;
+            if (!this.table) return true;
+
+            const filterUnit = $('#filterUnit').val();
+            const filterDate = $('#filterDate').val(); 
+            
+            const rowData = this.table.row(dataIndex).data(); 
+            if (!rowData) return true;
+
+            // 1. Pengecekan Unit
+            const unitMatch = filterUnit === "" || rowData.Unit === filterUnit;
+            
+            // 2. Pengecekan Rentang Tanggal
+            let dateMatch = true;
+            if (filterDate) {
+                const eventStart = new Date(rowData['Tanggal Mulai']).setHours(0,0,0,0);
+
+                if (filterDate.includes(' to ')) {
+                    const dates = filterDate.split(' to ');
+                    const startFilter = new Date(dates[0]).setHours(0,0,0,0);
+                    const endFilter = new Date(dates[1]).setHours(23,59,59,999);
+                    dateMatch = (eventStart >= startFilter && eventStart <= endFilter);
+                } else {
+                    const targetDate = new Date(filterDate).setHours(0,0,0,0);
+                    dateMatch = (eventStart === targetDate);
+                }
+            }
+
+            return unitMatch && dateMatch;
+        });
+    },
+
     setupTemplateInteractions: function() {
+        // Toggle Sidebar
         $('#sidebarToggle').on('click', function(e) {
-            e.preventDefault(); $('body').toggleClass('sb-sidenav-toggled');
+            e.preventDefault(); 
+            $('body').toggleClass('sb-sidenav-toggled');
         });
 
+        // Toggle Dark/Light Mode
         $('#themeToggle').on('click', function() {
             $('body').toggleClass('dark-mode');
             const isDark = $('body').hasClass('dark-mode');
             $(this).html(isDark ? '<i class="fas fa-sun"></i> Mode' : '<i class="fas fa-moon"></i> Mode');
         });
 
+        // Navigasi Antar Halaman (Single Page Application)
         $('.menu-link').on('click', (e) => {
             e.preventDefault();
             const $this = $(e.currentTarget);
@@ -55,83 +117,30 @@ const app = {
             }
         });
 
-        $('#kegiatanForm').on('submit', (e) => {
-            e.preventDefault();
-            this.saveEvent();
-        });
-
-
-    $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
-            if (settings.nTable.id !== 'dataTable') return true;
-
-            const filterUnit = $('#filterUnit').val();
-            const filterDate = $('#filterDate').val(); 
-            
-            // Ambil data mentah (original row data) dari array
-            const rowData = app.table.row(dataIndex).data(); 
-            if (!rowData) return true;
-
-            // 1. Pengecekan Unit
-            const unitMatch = filterUnit === "" || rowData.Unit === filterUnit;
-            
-            // 2. Pengecekan Rentang Tanggal
-            let dateMatch = true;
-            if (filterDate) {
-                const eventStart = new Date(rowData['Tanggal Mulai']).setHours(0,0,0,0);
-
-                if (filterDate.includes(' to ')) {
-                    // Jika memilih rentang (Start to End)
-                    const dates = filterDate.split(' to ');
-                    const startFilter = new Date(dates[0]).setHours(0,0,0,0);
-                    const endFilter = new Date(dates[1]).setHours(23,59,59,999);
-                    dateMatch = (eventStart >= startFilter && eventStart <= endFilter);
-                } else {
-                    // Jika hanya memilih satu tanggal spesifik
-                    const targetDate = new Date(filterDate).setHours(0,0,0,0);
-                    dateMatch = (eventStart === targetDate);
-                }
-            }
-
-            return unitMatch && dateMatch;
-        });
-
-        // Trigger Filter Saat Dropdown/Tanggal Berubah
+        // Event Listener: Filter DataTables
         $('#filterUnit, #filterDate').on('change', () => {
             if (this.table) this.table.draw();
         });
 
-        // Trigger Tombol Reset Filter
+        // Event Listener: Reset Filter
         $('#btnResetFilter').on('click', () => {
             $('#filterUnit').val('').trigger('change');
             document.querySelector('#filterDate')._flatpickr.clear();
             if (this.table) this.table.draw();
         });
 
-        // Form Submit
+        // Event Listener: Import CSV
+        $('#fileCsv').on('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            this.handleCsvUpload(file);
+            $(e.target).val(''); // Reset value agar file yang sama bisa dipilih lagi
+        });
+
+        // Event Listener: Submit Form Tambah/Edit Kegiatan
         $('#kegiatanForm').on('submit', (e) => {
             e.preventDefault();
             this.saveEvent();
-        });
-
-
-
-
-
-        
-    },
-
-    setupPlugins: function() {
-        // Plugin Form Tambah Kegiatan
-        $('.select2').select2({ theme: 'bootstrap-5', dropdownParent: $('#kegiatanModal') });
-        $('.flatpickr-date').flatpickr({ enableTime: false, dateFormat: "Y-m-d" });
-
-        // Plugin Filter Tabel
-        $('.select2-filter').select2({ theme: 'bootstrap-5' });
-        $('.flatpickr-range').flatpickr({
-            mode: "range",          // Mode Rentang Tanggal
-            dateFormat: "Y-m-d",
-            altInput: true,         // Menampilkan format yang mudah dibaca
-            altFormat: "d M Y"
         });
     },
 
@@ -145,44 +154,40 @@ const app = {
         }
     },
 
-
     refreshUI: function() {
+        // Update Tabel
         if (this.table) {
             this.table.clear();
             this.table.rows.add(this.eventsData);
             this.table.draw();
         }
+        // Update Kalender
         if (this.calendar) {
             const formattedEvents = this.formatEventsForCalendar(this.eventsData);
             this.calendar.removeAllEvents();
             this.calendar.addEventSource(formattedEvents);
         }
+        // Update Analitik Dashboard
         DashboardAnalytics.populateCounters(this.eventsData);
         DashboardAnalytics.renderCharts(this.eventsData);
         DashboardAnalytics.detectConflicts(this.eventsData);
     },
 
-    // Fungsi Bantuan Baru: Memformat tanggal agar menjadi blok warna penuh (All Day)
     formatEventsForCalendar: function(data) {
         return data.map(item => {
-            // Konversi ke objek Date
             const startDate = new Date(item['Tanggal Mulai']);
             const endDate = new Date(item['Tanggal Selesai']);
             
-            // FULLCALENDAR FIX: Tambahkan 1 hari ke Tanggal Selesai agar blok warna dirender hingga akhir hari
+            // FullCalendar Fix: Tambah 1 hari ke End Date untuk All-Day Event
             const exclusiveEndDate = new Date(endDate);
             exclusiveEndDate.setDate(exclusiveEndDate.getDate() + 1);
-
-            // Ekstrak hanya YYYY-MM-DD
-            const startStr = startDate.toISOString().split('T')[0];
-            const endStr = exclusiveEndDate.toISOString().split('T')[0];
 
             return {
                 id: item['ID (UUID)'],
                 title: `[${item.Unit}] ${item['Nama Kegiatan']}`,
-                start: startStr,
-                end: endStr,
-                allDay: true, // Memaksa FullCalendar menjadikannya blok warna solid, tanpa teks jam
+                start: startDate.toISOString().split('T')[0],
+                end: exclusiveEndDate.toISOString().split('T')[0],
+                allDay: true,
                 backgroundColor: this.getUnitColorCode(item.Unit),
                 borderColor: this.getUnitColorCode(item.Unit),
                 textColor: '#ffffff',
@@ -191,75 +196,29 @@ const app = {
         });
     },
 
-    initCalendar: function() {
-        const calElement = document.getElementById('calendar');
-        const formattedEvents = this.formatEventsForCalendar(this.eventsData);
-
-        this.calendar = new FullCalendar.Calendar(calElement, {
-            // HAPUS themeSystem: 'bootstrap5' agar kita bisa mendesainnya bergaya Google Calendar
-            initialView: 'dayGridMonth',
-            firstDay: 0, // 0 = Minggu, 1 = Senin (Menyesuaikan Google Calendar)
-            headerToolbar: {
-                left: 'today prev,next',
-                center: 'title',
-                right: 'dayGridMonth,timeGridWeek,timeGridDay' // Sesuaikan gaya minimalis
-            },
-            buttonText: { today: 'Hari ini', month: 'Bulan', week: 'Minggu', day: 'Hari' },
-            events: formattedEvents,
-            editable: true,
-            droppable: true,
-            selectable: true,
-            dayMaxEvents: true, // Akan memunculkan "more..." jika kegiatan menumpuk di 1 hari
-            
-            dateClick: (info) => {
-                this.openModal();
-                $('#tanggal_mulai').val(info.dateStr);
-            },
-            eventClick: (info) => { this.editEvent(info.event.id); },
-            eventDrop: (info) => { this.syncDragDrop(info.event); },
-            eventResize: (info) => { this.syncDragDrop(info.event); }
-        });
-    },
-
-
-
-
-
     initDataTables: function() {
         this.table = $('#dataTable').DataTable({
             data: this.eventsData,
             responsive: true,
             scrollX: true,
-            // Mengatur tata letak elemen tabel (Tombol, Pencarian, Pagination)
             dom: '<"row align-items-center mb-3"<"col-sm-12 col-md-6"B><"col-sm-12 col-md-6 d-flex justify-content-md-end"f>>rt<"row align-items-center mt-3"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7 d-flex justify-content-md-end"p>>',
-            
-            // Pengaturan Tombol Export dengan warna yang sesuai tema
             buttons: [
-                { extend: 'copy', text: '<i class="fas fa-copy me-1"></i> Copy', className: 'btn btn-sm btn-outline-primary mb-2' },
-                { extend: 'excel', text: '<i class="fas fa-file-excel me-1"></i> Excel', className: 'btn btn-sm btn-outline-success mb-2' },
-                { extend: 'pdf', text: '<i class="fas fa-file-pdf me-1"></i> PDF', className: 'btn btn-sm btn-outline-danger mb-2' },
-                { extend: 'print', text: '<i class="fas fa-print me-1"></i> Print', className: 'btn btn-sm btn-outline-secondary mb-2' }
+                { extend: 'copy', text: '<i class="fas fa-copy me-1"></i> Copy', className: 'btn-copy mb-2' },
+                { extend: 'excel', text: '<i class="fas fa-file-excel me-1"></i> Excel', className: 'btn-excel mb-2' },
+                { extend: 'pdf', text: '<i class="fas fa-file-pdf me-1"></i> PDF', className: 'btn-pdf mb-2' },
+                { extend: 'print', text: '<i class="fas fa-print me-1"></i> Print', className: 'btn-print mb-2' }
             ],
-            
-            // Pengaturan Kolom (Disesuaikan menjadi 7 Kolom)
             columns: [
                 { data: null, className: 'text-center', render: (d, t, r, meta) => meta.row + 1 },
                 { data: 'Unit' },
                 { data: 'Nama Kegiatan', className: 'fw-bold text-dark' },
                 { 
                     data: 'Tanggal Mulai', 
-                    render: data => {
-                        if(!data) return '-';
-                        // Memaksa format hanya menampilkan tanggal (contoh: 8 Agu 2026)
-                        return new Date(data).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
-                    }
+                    render: data => data ? new Date(data).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'
                 },
                 { 
                     data: 'Tanggal Selesai', 
-                    render: data => {
-                        if(!data) return '-';
-                        return new Date(data).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
-                    }
+                    render: data => data ? new Date(data).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'
                 },
                 { data: 'PIC' },
                 { 
@@ -272,38 +231,35 @@ const app = {
                         </div>
                     `
                 }
-            ]
+            ],
+            drawCallback: function() {
+                if (typeof feather !== 'undefined') feather.replace();
+            }
         });
     },
 
     initCalendar: function() {
         const calElement = document.getElementById('calendar');
-        const formattedEvents = this.eventsData.map(item => ({
-            id: item['ID (UUID)'],
-            title: `[${item.Unit}] ${item['Nama Kegiatan']}`,
-            start: item['Tanggal Mulai'],
-            end: item['Tanggal Selesai'],
-            backgroundColor: this.getUnitColorCode(item.Unit),
-            extendedProps: item
-        }));
+        const formattedEvents = this.formatEventsForCalendar(this.eventsData);
 
         this.calendar = new FullCalendar.Calendar(calElement, {
-            themeSystem: 'bootstrap5',
             initialView: 'dayGridMonth',
+            firstDay: 0, 
             headerToolbar: {
-                left: 'prev,next today',
+                left: 'today prev,next',
                 center: 'title',
-                right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+                right: 'dayGridMonth,timeGridWeek,timeGridDay'
             },
-            buttonText: { today: 'Hari Ini', month: 'Bulan', week: 'Minggu', day: 'Hari', list: 'Agenda' },
+            buttonText: { today: 'Hari ini', month: 'Bulan', week: 'Minggu', day: 'Hari' },
             events: formattedEvents,
             editable: true,
             droppable: true,
             selectable: true,
+            dayMaxEvents: true,
             
             dateClick: (info) => {
                 this.openModal();
-                $('#tanggal_mulai').val(info.dateStr); // Cukup Set Tanggal saja
+                $('#tanggal_mulai').val(info.dateStr); 
             },
             eventClick: (info) => { this.editEvent(info.event.id); },
             eventDrop: (info) => { this.syncDragDrop(info.event); },
@@ -344,7 +300,6 @@ const app = {
         $('#pic').val(item.PIC).trigger('change');
         $('#nama_kegiatan').val(item['Nama Kegiatan']);
         
-        // Format hanya Tanggal YYYY-MM-DD
         const formatDate = (isoString) => {
             const dt = new Date(isoString);
             const pad = (n) => n.toString().padStart(2, '0');
@@ -357,11 +312,7 @@ const app = {
         $('#kegiatanModal').modal('show');
     },
 
-
-
-
-saveEvent: function() {
-        // 1. Ambil data dari form
+    saveEvent: function() {
         const payload = {
             id: $('#event_id').val(),
             unit: $('#unit').val(),
@@ -374,26 +325,22 @@ saveEvent: function() {
         const action = payload.id ? 'update' : 'add';
         const btn = $('#btnSave');
 
-        // 2. Logika Deteksi Tabrakan Jadwal (Overlap Detection)
+        // Logika Deteksi Tabrakan Jadwal
         const newStart = new Date(payload.tanggal_mulai).getTime();
         const newEnd = new Date(payload.tanggal_selesai).getTime();
         let conflictingEvents = [];
 
-        // Cek data yang ada di memori lokal
         this.eventsData.forEach(event => {
-            // Jangan periksa tabrakan dengan dirinya sendiri jika sedang dalam mode "Edit"
             if (payload.id && event['ID (UUID)'] === payload.id) return;
 
             const existStart = new Date(event['Tanggal Mulai']).getTime();
             const existEnd = new Date(event['Tanggal Selesai']).getTime();
 
-            // Rumus mendeteksi irisan tanggal (Start A <= End B DAN Start B <= End A)
             if (newStart <= existEnd && existStart <= newEnd) {
                 conflictingEvents.push(`• <b>${event['Nama Kegiatan']}</b> <span class="text-primary">(${event.Unit})</span>`);
             }
         });
 
-        // 3. Tampilkan Pop-up jika ada tabrakan
         if (conflictingEvents.length > 0) {
             Swal.fire({
                 title: '⚠️ Peringatan Tabrakan Jadwal',
@@ -402,7 +349,7 @@ saveEvent: function() {
                     <div class="text-start bg-light p-2 rounded mb-3" style="max-height: 120px; overflow-y: auto; font-size: 0.9rem;">
                         ${conflictingEvents.join('<br>')}
                     </div>
-                    <div class="text-start">Apakah Anda yakin ingin tetap menyimpannya? Anda bisa mengeditnya lagi nanti.</div>
+                    <div class="text-start">Apakah Anda yakin ingin tetap menyimpannya?</div>
                 `,
                 icon: 'warning',
                 showCancelButton: true,
@@ -410,20 +357,17 @@ saveEvent: function() {
                 cancelButtonColor: '#6c757d',
                 confirmButtonText: '<i class="fas fa-save me-1"></i> Ya, Tetap Simpan',
                 cancelButtonText: 'Batal',
-                reverseButtons: true // Memindahkan tombol Batal ke kiri
+                reverseButtons: true
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // Jika pengguna memaksa simpan, eksekusi penyimpanan ke server
                     this.executeSaveToServer(action, payload, btn);
                 }
             });
         } else {
-            // Jika tidak ada tabrakan, langsung simpan tanpa peringatan
             this.executeSaveToServer(action, payload, btn);
         }
     },
 
-    // Fungsi terpisah untuk melakukan pengiriman data ke Google Apps Script
     executeSaveToServer: async function(action, payload, btn) {
         btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Memproses...');
 
@@ -438,7 +382,6 @@ saveEvent: function() {
                 this.toast('Kegiatan berhasil disimpan!', 'success');
                 $('#kegiatanModal').modal('hide');
                 
-                // Minta data terbaru dari server & gambar ulang UI (TANPA RELOAD HALAMAN)
                 await this.loadData();
                 this.refreshUI(); 
             } else {
@@ -450,18 +393,6 @@ saveEvent: function() {
             btn.prop('disabled', false).text('Simpan Kegiatan');
         }
     },
-
-
-
-
-
-
-
-
-
-
-
-
 
     deleteEvent: function(id) {
         Swal.fire({
@@ -485,9 +416,11 @@ saveEvent: function() {
     syncDragDrop: function(event) {
         const item = event.extendedProps;
         const payload = {
-            id: item['ID (UUID)'], unit: item.Unit, nama_kegiatan: item['Nama Kegiatan'],
-            tanggal_mulai: event.start.toISOString().split('T')[0], // Split untuk mengambil tanggalnya saja
-            tanggal_selesai: event.end ? event.end.toISOString().split('T')[0] : event.start.toISOString().split('T')[0],
+            id: item['ID (UUID)'], 
+            unit: item.Unit, 
+            nama_kegiatan: item['Nama Kegiatan'],
+            tanggal_mulai: event.start.toISOString().split('T')[0],
+            tanggal_selesai: event.end ? new Date(event.end.getTime() - 86400000).toISOString().split('T')[0] : event.start.toISOString().split('T')[0],
             pic: item.PIC
         };
 
@@ -495,6 +428,96 @@ saveEvent: function() {
             method: 'POST', body: JSON.stringify({ action: 'update', payload: payload })
         }).then(res => res.json()).then(() => {
             this.toast('Waktu berhasil disesuaikan', 'info');
+            this.loadData().then(() => this.refreshUI());
+        });
+    },
+
+    handleCsvUpload: function(file) {
+        if (typeof Papa === 'undefined') {
+            this.toast('Library CSV belum termuat sempurna. Silakan muat ulang halaman.', 'error');
+            return;
+        }
+
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: async (results) => {
+                const data = results.data;
+                if (data.length === 0) {
+                    this.toast('File CSV kosong', 'warning');
+                    return;
+                }
+
+                // Cek Header CSV Baru (Tanpa Lokasi & Status)
+                const requiredHeaders = ['Unit', 'Nama Kegiatan', 'Tanggal Mulai', 'Tanggal Selesai', 'PIC'];
+                const fileHeaders = Object.keys(data[0]);
+                const isValid = requiredHeaders.every(h => fileHeaders.includes(h));
+
+                if (!isValid) {
+                    Swal.fire('Format Salah', 'Pastikan header CSV persis memiliki kolom: Unit, Nama Kegiatan, Tanggal Mulai, Tanggal Selesai, PIC', 'error');
+                    return;
+                }
+
+                this.processBulkImport(data);
+            },
+            error: () => {
+                this.toast('Gagal membaca file CSV', 'error');
+            }
+        });
+    },
+
+    processBulkImport: async function(dataList) {
+        const total = dataList.length;
+        let successCount = 0;
+        let errorCount = 0;
+
+        Swal.fire({
+            title: 'Mengimpor Data...',
+            html: `
+                <div class="mb-3">Menyinkronkan dengan Google Calendar...</div>
+                <div class="progress" style="height: 25px;">
+                    <div id="import-progress" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 0%; font-weight: bold;">0%</div>
+                </div>
+                <div class="mt-2 small text-muted" id="import-status">Memproses 0 dari ${total}</div>
+            `,
+            allowOutsideClick: false, allowEscapeKey: false, showConfirmButton: false
+        });
+
+        for (let i = 0; i < total; i++) {
+            const row = dataList[i];
+            const payload = {
+                id: "", 
+                unit: row['Unit'],
+                nama_kegiatan: row['Nama Kegiatan'],
+                tanggal_mulai: row['Tanggal Mulai'],
+                tanggal_selesai: row['Tanggal Selesai'],
+                pic: row['PIC']
+            };
+
+            try {
+                const response = await fetch(GAS_WEB_APP_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'add', payload: payload })
+                });
+                const result = await response.json();
+                
+                if (result.status === 'success') successCount++;
+                else errorCount++;
+            } catch (error) {
+                errorCount++;
+            }
+
+            const percent = Math.round(((i + 1) / total) * 100);
+            $('#import-progress').css('width', percent + '%').text(percent + '%');
+            $('#import-status').text(`Memproses ${i + 1} dari ${total}`);
+        }
+
+        Swal.fire({
+            title: 'Impor Selesai!',
+            html: `Berhasil ditambahkan: <b>${successCount}</b><br>Gagal / Duplikat: <b>${errorCount}</b>`,
+            icon: errorCount > 0 ? 'warning' : 'success',
+            confirmButtonText: 'Selesai'
+        }).then(() => {
             this.loadData().then(() => this.refreshUI());
         });
     },
