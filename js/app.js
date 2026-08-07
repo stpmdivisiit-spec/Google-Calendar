@@ -103,33 +103,54 @@ const app = {
         DashboardAnalytics.render2DCharts(this.eventsData);
     },
 
-    initDataTables: function() {
+initDataTables: function() {
         this.table = $('#dataTable').DataTable({
             data: this.eventsData,
             responsive: true,
+            scrollX: true,
+            // Mengatur tata letak elemen tabel (Tombol, Pencarian, Pagination)
             dom: '<"row align-items-center mb-3"<"col-sm-12 col-md-6"B><"col-sm-12 col-md-6 d-flex justify-content-md-end"f>>rt<"row align-items-center mt-3"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7 d-flex justify-content-md-end"p>>',
+            
+            // Pengaturan Tombol Export dengan warna yang sesuai tema
             buttons: [
-                { extend: 'copy', text: '<i class="fas fa-copy me-1"></i> Copy' },
-                { extend: 'excel', text: '<i class="fas fa-file-excel me-1"></i> Excel' },
-                { extend: 'pdf', text: '<i class="fas fa-file-pdf me-1"></i> PDF' },
-                { extend: 'print', text: '<i class="fas fa-print me-1"></i> Print' }
+                { extend: 'copy', text: '<i class="fas fa-copy me-1"></i> Copy', className: 'btn btn-sm btn-outline-primary mb-2' },
+                { extend: 'excel', text: '<i class="fas fa-file-excel me-1"></i> Excel', className: 'btn btn-sm btn-outline-success mb-2' },
+                { extend: 'pdf', text: '<i class="fas fa-file-pdf me-1"></i> PDF', className: 'btn btn-sm btn-outline-danger mb-2' },
+                { extend: 'print', text: '<i class="fas fa-print me-1"></i> Print', className: 'btn btn-sm btn-outline-secondary mb-2' }
             ],
-            // PENGATURAN BARU KOLOM: Sesuaikan penghapusan status, lokasi, dll.
+            
+            // Pengaturan Kolom (Disesuaikan menjadi 7 Kolom)
             columns: [
                 { data: null, className: 'text-center', render: (d, t, r, meta) => meta.row + 1 },
                 { data: 'Unit' },
-                { data: 'Nama Kegiatan', className: 'fw-500' },
-                { data: 'Tanggal Mulai', render: data => new Date(data).toLocaleDateString('id-ID', {dateStyle: 'medium'}) },
-                { data: 'Tanggal Selesai', render: data => new Date(data).toLocaleDateString('id-ID', {dateStyle: 'medium'}) },
+                { data: 'Nama Kegiatan', className: 'fw-bold text-dark' },
+                { 
+                    data: 'Tanggal Mulai', 
+                    render: data => {
+                        if(!data) return '-';
+                        // Memaksa format hanya menampilkan tanggal (contoh: 8 Agu 2026)
+                        return new Date(data).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+                    }
+                },
+                { 
+                    data: 'Tanggal Selesai', 
+                    render: data => {
+                        if(!data) return '-';
+                        return new Date(data).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+                    }
+                },
                 { data: 'PIC' },
-                { data: 'ID (UUID)', className: 'text-center', render: id => `
-                    <div class="d-flex justify-content-center gap-2">
-                        <button class="btn btn-datatable btn-icon btn-transparent-dark" onclick="app.editEvent('${id}')" title="Edit"><i data-feather="edit-2"></i></button>
-                        <button class="btn btn-datatable btn-icon btn-transparent-dark text-danger" onclick="app.deleteEvent('${id}')" title="Hapus"><i data-feather="trash-2"></i></button>
-                    </div>
-                `}
-            ],
-            drawCallback: function() { if (typeof feather !== 'undefined') feather.replace(); }
+                { 
+                    data: 'ID (UUID)', 
+                    className: 'text-center', 
+                    render: id => `
+                        <div class="d-flex justify-content-center gap-2">
+                            <button class="btn btn-sm btn-primary btn-icon" onclick="app.editEvent('${id}')" title="Edit"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-sm btn-danger btn-icon" onclick="app.deleteEvent('${id}')" title="Hapus"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    `
+                }
+            ]
         });
     },
 
