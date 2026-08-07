@@ -212,7 +212,40 @@ initDataTables: function() {
         });
     },
 
-  
+    initCalendar: function() {
+        const calElement = document.getElementById('calendar');
+        const formattedEvents = this.eventsData.map(item => ({
+            id: item['ID (UUID)'],
+            title: `[${item.Unit}] ${item['Nama Kegiatan']}`,
+            start: item['Tanggal Mulai'],
+            end: item['Tanggal Selesai'],
+            backgroundColor: this.getUnitColorCode(item.Unit),
+            extendedProps: item
+        }));
+
+        this.calendar = new FullCalendar.Calendar(calElement, {
+            themeSystem: 'bootstrap5',
+            initialView: 'dayGridMonth',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+            },
+            buttonText: { today: 'Hari Ini', month: 'Bulan', week: 'Minggu', day: 'Hari', list: 'Agenda' },
+            events: formattedEvents,
+            editable: true,
+            droppable: true,
+            selectable: true,
+            
+            dateClick: (info) => {
+                this.openModal();
+                $('#tanggal_mulai').val(info.dateStr); // Cukup Set Tanggal saja
+            },
+            eventClick: (info) => { this.editEvent(info.event.id); },
+            eventDrop: (info) => { this.syncDragDrop(info.event); },
+            eventResize: (info) => { this.syncDragDrop(info.event); }
+        });
+    },
 
     getUnitColorCode: function(unit) {
         const colors = {
