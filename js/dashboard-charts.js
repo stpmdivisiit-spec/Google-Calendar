@@ -1,5 +1,4 @@
 const DashboardAnalytics = {
-    // Menyimpan instance grafik agar bisa dihancurkan saat data di-update
     barChartInstance: null,
     doughnutChartInstance: null,
 
@@ -10,13 +9,12 @@ const DashboardAnalytics = {
 
     populateCounters: function(data) {
         $('#stat-total').text(data.length);
-        
         const currentMonth = new Date().getMonth();
-        const monthCount = data.filter(d => new Date(d['Tanggal Mulai']).getMonth() === currentMonth).length;
-        $('#stat-month').text(monthCount);
-
-        const doneCount = data.filter(d => d.Status === 'Selesai').length;
-        $('#stat-completed').text(doneCount);
+        $('#stat-month').text(data.filter(d => new Date(d['Tanggal Mulai']).getMonth() === currentMonth).length);
+        
+        // Status dihapus, jadi kolom ini hanya menampilkan kegiatan yang akan datang
+        const futureCount = data.filter(d => new Date(d['Tanggal Mulai']) >= new Date()).length;
+        $('#stat-completed').text(futureCount).siblings('.text-muted').text('Kegiatan Akan Datang');
 
         const unitFrequency = {};
         data.forEach(d => { unitFrequency[d.Unit] = (unitFrequency[d.Unit] || 0) + 1; });
@@ -25,58 +23,47 @@ const DashboardAnalytics = {
     },
 
     render2DCharts: function(data) {
-        const statusMap = { 'Perencanaan': 0, 'Berjalan': 0, 'Selesai': 0, 'Ditunda': 0 };
+        // Ekstraksi data Unit untuk chart lingkaran
+        const unitMap = {};
         const monthlyMap = new Array(12).fill(0);
 
         data.forEach(d => {
-            if (statusMap[d.Status] !== undefined) statusMap[d.Status]++;
+            unitMap[d.Unit] = (unitMap[d.Unit] || 0) + 1;
             const date = new Date(d['Tanggal Mulai']);
             monthlyMap[date.getMonth()]++;
         });
 
         const primaryColor = 'rgba(13, 110, 253, 0.9)';
-        const successColor = 'rgba(25, 135, 84, 0.9)';
-        const dangerColor = 'rgba(220, 53, 69, 0.9)';
-        const secondaryColor = 'rgba(108, 117, 125, 0.9)';
 
-        // Hancurkan grafik lama jika ada (untuk mencegah penumpukan saat update data)
         if (this.barChartInstance) this.barChartInstance.destroy();
         if (this.doughnutChartInstance) this.doughnutChartInstance.destroy();
 
-        // Bar Chart
+        // Bar Chart - Distribusi Bulanan
         this.barChartInstance = new Chart(document.getElementById('barChart'), {
             type: 'bar',
             data: {
                 labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'],
-                datasets: [{
-                    label: 'Jumlah Kegiatan',
-                    data: monthlyMap,
-                    backgroundColor: primaryColor,
-                    borderRadius: 4
-                }]
+                datasets: [{ label: 'Jumlah Kegiatan', data: monthlyMap, backgroundColor: primaryColor, borderRadius: 4 }]
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { title: { display: false }, legend: { display: false } }
-            }
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
         });
 
-        // Doughnut Chart
+        // Doughnut Chart - Berubah menjadi Distribusi Unit
+        const bgColors = ['#0d6efd', '#dc3545', '#6f42c1', '#198754', '#0dcaf0', '#fd7e14', '#ffc107', '#20c997', '#e83e8c', '#6610f2'];
+        $('#doughnutChart').parent().parent().siblings('.card-header').text('Proporsi Kegiatan per Unit');
+        
         this.doughnutChartInstance = new Chart(document.getElementById('doughnutChart'), {
             type: 'doughnut',
             data: {
-                labels: Object.keys(statusMap),
+                labels: Object.keys(unitMap),
                 datasets: [{
-                    data: Object.values(statusMap),
-                    backgroundColor: [secondaryColor, primaryColor, successColor, dangerColor]
+                    data: Object.values(unitMap),
+                    backgroundColor: bgColors.slice(0, Object.keys(unitMap).length)
                 }]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '70%',
-                plugins: { title: { display: false }, legend: { position: 'bottom' } }
+                responsive: true, maintainAspectRatio: false, cutout: '65%',
+                plugins: { legend: { position: 'right', labels: { boxWidth: 12 } } }
             }
         });
     }
