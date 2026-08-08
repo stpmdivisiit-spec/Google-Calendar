@@ -11,7 +11,7 @@ const app = {
 
     init: async function() {
         this.setupPlugins();
-        this.setupDataTablesFilter(); // Inisialisasi filter kustom sebelum tabel dirender
+        this.setupDataTablesFilter();
         this.setupTemplateInteractions();
         
         await this.loadData();
@@ -76,6 +76,17 @@ const app = {
     },
 
     setupTemplateInteractions: function() {
+        // Logika Dropdown Tipe Kegiatan (Internal/Eksternal)
+        $('#tipe_kegiatan').on('change', function() {
+            if ($(this).val() === 'Eksternal') {
+                $('#wrap_deskripsi').removeClass('d-none');
+                $('#deskripsi').attr('required', true);
+            } else {
+                $('#wrap_deskripsi').addClass('d-none');
+                $('#deskripsi').removeAttr('required').val('');
+            }
+        });
+
         // Toggle Sidebar
         $('#sidebarToggle').on('click', function(e) {
             e.preventDefault(); 
@@ -89,7 +100,7 @@ const app = {
             $(this).html(isDark ? '<i class="fas fa-sun"></i> Mode' : '<i class="fas fa-moon"></i> Mode');
         });
 
-        // Navigasi Antar Halaman (Single Page Application)
+        // Navigasi Antar Halaman (SPA)
         $('.menu-link').on('click', (e) => {
             e.preventDefault();
             const $this = $(e.currentTarget);
@@ -134,10 +145,10 @@ const app = {
             const file = e.target.files[0];
             if (!file) return;
             this.handleCsvUpload(file);
-            $(e.target).val(''); // Reset value agar file yang sama bisa dipilih lagi
+            $(e.target).val(''); 
         });
 
-        // Event Listener: Submit Form Tambah/Edit Kegiatan
+        // Event Listener: Submit Form Tambah/Edit
         $('#kegiatanForm').on('submit', (e) => {
             e.preventDefault();
             this.saveEvent();
@@ -155,19 +166,16 @@ const app = {
     },
 
     refreshUI: function() {
-        // Update Tabel
         if (this.table) {
             this.table.clear();
             this.table.rows.add(this.eventsData);
             this.table.draw();
         }
-        // Update Kalender
         if (this.calendar) {
             const formattedEvents = this.formatEventsForCalendar(this.eventsData);
             this.calendar.removeAllEvents();
             this.calendar.addEventSource(formattedEvents);
         }
-        // Update Analitik Dashboard
         DashboardAnalytics.populateCounters(this.eventsData);
         DashboardAnalytics.renderCharts(this.eventsData);
         DashboardAnalytics.detectConflicts(this.eventsData);
@@ -178,19 +186,30 @@ const app = {
             const startDate = new Date(item['Tanggal Mulai']);
             const endDate = new Date(item['Tanggal Selesai']);
             
-            // FullCalendar Fix: Tambah 1 hari ke End Date untuk All-Day Event
+            // FullCalendar Fix: Tambah 1 hari ke End Date
             const exclusiveEndDate = new Date(endDate);
             exclusiveEndDate.setDate(exclusiveEndDate.getDate() + 1);
 
+            let eventTitle = `[${item.Unit}] ${item['Nama Kegiatan']}`;
+            let bgColor = this.getUnitColorCode(item.Unit);
+            let textColor = '#ffffff';
+
+            // Jika eksternal, gunakan warna Kuning mencolok
+            if (item.Tipe === 'Eksternal') {
+                eventTitle = `[EKSTERNAL] ${item['Nama Kegiatan']}`;
+                bgColor = '#ffc107'; 
+                textColor = '#000000';
+            }
+
             return {
                 id: item['ID (UUID)'],
-                title: `[${item.Unit}] ${item['Nama Kegiatan']}`,
+                title: eventTitle,
                 start: startDate.toISOString().split('T')[0],
                 end: exclusiveEndDate.toISOString().split('T')[0],
                 allDay: true,
-                backgroundColor: this.getUnitColorCode(item.Unit),
-                borderColor: this.getUnitColorCode(item.Unit),
-                textColor: '#ffffff',
+                backgroundColor: bgColor,
+                borderColor: bgColor,
+                textColor: textColor,
                 extendedProps: item
             };
         });
@@ -211,7 +230,17 @@ const app = {
             columns: [
                 { data: null, className: 'text-center', render: (d, t, r, meta) => meta.row + 1 },
                 { data: 'Unit' },
-                { data: 'Nama Kegiatan', className: 'fw-bold text-dark' },
+                { 
+                    data: 'Nama Kegiatan', 
+                    className: 'fw-bold text-dark',
+                    render: (data, type, row) => {
+                        // Badge untuk Kegiatan Eksternal
+                        if (row.Tipe === 'Eksternal') {
+                            return `${data} <span class="badge bg-warning text-dark ms-2 shadow-sm"><i class="fas fa-external-link-alt me-1"></i>Eksternal</span>`;
+                        }
+                        return data;
+                    }
+                },
                 { 
                     data: 'Tanggal Mulai', 
                     render: data => data ? new Date(data).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'
@@ -287,6 +316,7 @@ const app = {
     openModal: function() {
         $('#kegiatanForm')[0].reset();
         $('#event_id').val('');
+        $('#tipe_kegiatan').val('Internal').trigger('change'); 
         $('.select2').val('').trigger('change');
         $('#kegiatanModal').modal('show');
     },
@@ -296,16 +326,14 @@ const app = {
         if (!item) return;
         
         $('#event_id').val(item['ID (UUID)']);
+        $('#tipe_kegiatan').val(item.Tipe || 'Internal').trigger('change'); 
+        if(item.Tipe === 'Eksternal') $('#deskripsi').val(item['Deskripsi Kegiatan']);
+        
         $('#unit').val(item.Unit).trigger('change');
         $('#pic').val(item.PIC).trigger('change');
         $('#nama_kegiatan').val(item['Nama Kegiatan']);
         
-        const formatDate = (isoString) => {
-            const dt = new Date(isoString);
-            const pad = (n) => n.toString().padStart(2, '0');
-            return `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`;
-        };
-
+        const formatDate = (dtStr) => new Date(dtStr).toISOString().split('T')[0];
         $('#tanggal_mulai').val(formatDate(item['Tanggal Mulai']));
         $('#tanggal_selesai').val(formatDate(item['Tanggal Selesai']));
         
@@ -315,6 +343,8 @@ const app = {
     saveEvent: function() {
         const payload = {
             id: $('#event_id').val(),
+            tipe: $('#tipe_kegiatan').val(), 
+            deskripsi: $('#deskripsi').val() || '', 
             unit: $('#unit').val(),
             nama_kegiatan: $('#nama_kegiatan').val(),
             tanggal_mulai: $('#tanggal_mulai').val(),
@@ -325,7 +355,6 @@ const app = {
         const action = payload.id ? 'update' : 'add';
         const btn = $('#btnSave');
 
-        // Logika Deteksi Tabrakan Jadwal
         const newStart = new Date(payload.tanggal_mulai).getTime();
         const newEnd = new Date(payload.tanggal_selesai).getTime();
         let conflictingEvents = [];
@@ -336,8 +365,11 @@ const app = {
             const existStart = new Date(event['Tanggal Mulai']).getTime();
             const existEnd = new Date(event['Tanggal Selesai']).getTime();
 
-            if (newStart <= existEnd && existStart <= newEnd) {
-                conflictingEvents.push(`• <b>${event['Nama Kegiatan']}</b> <span class="text-primary">(${event.Unit})</span>`);
+            // Proteksi dari data Invalid Date
+            if (!isNaN(existStart) && !isNaN(existEnd) && !isNaN(newStart) && !isNaN(newEnd)) {
+                if (newStart <= existEnd && existStart <= newEnd) {
+                    conflictingEvents.push(`• <b>${event['Nama Kegiatan']}</b> <span class="text-primary">(${event.Unit})</span>`);
+                }
             }
         });
 
@@ -417,6 +449,8 @@ const app = {
         const item = event.extendedProps;
         const payload = {
             id: item['ID (UUID)'], 
+            tipe: item.Tipe || 'Internal',
+            deskripsi: item['Deskripsi Kegiatan'] || '',
             unit: item.Unit, 
             nama_kegiatan: item['Nama Kegiatan'],
             tanggal_mulai: event.start.toISOString().split('T')[0],
@@ -434,7 +468,7 @@ const app = {
 
     handleCsvUpload: function(file) {
         if (typeof Papa === 'undefined') {
-            this.toast('Library CSV belum termuat sempurna. Silakan muat ulang halaman.', 'error');
+            this.toast('Library CSV belum termuat sempurna.', 'error');
             return;
         }
 
@@ -448,13 +482,13 @@ const app = {
                     return;
                 }
 
-                // Cek Header CSV Baru (Tanpa Lokasi & Status)
-                const requiredHeaders = ['Unit', 'Nama Kegiatan', 'Tanggal Mulai', 'Tanggal Selesai', 'PIC'];
+                // Header harus mengandung: Tipe Kegiatan, Unit, Nama Kegiatan, Tanggal Mulai, Tanggal Selesai, PIC, Deskripsi (opsional)
+                const requiredHeaders = ['Tipe Kegiatan', 'Unit', 'Nama Kegiatan', 'Tanggal Mulai', 'Tanggal Selesai', 'PIC'];
                 const fileHeaders = Object.keys(data[0]);
                 const isValid = requiredHeaders.every(h => fileHeaders.includes(h));
 
                 if (!isValid) {
-                    Swal.fire('Format Salah', 'Pastikan header CSV persis memiliki kolom: Unit, Nama Kegiatan, Tanggal Mulai, Tanggal Selesai, PIC', 'error');
+                    Swal.fire('Format Salah', 'Pastikan header CSV memiliki kolom: Tipe Kegiatan, Unit, Nama Kegiatan, Tanggal Mulai, Tanggal Selesai, PIC', 'error');
                     return;
                 }
 
@@ -487,6 +521,8 @@ const app = {
             const row = dataList[i];
             const payload = {
                 id: "", 
+                tipe: row['Tipe Kegiatan'] === 'Eksternal' ? 'Eksternal' : 'Internal',
+                deskripsi: row['Deskripsi'] || '',
                 unit: row['Unit'],
                 nama_kegiatan: row['Nama Kegiatan'],
                 tanggal_mulai: row['Tanggal Mulai'],

@@ -441,79 +441,70 @@
                     <h5 class="modal-title fw-bold">Formulir Kegiatan</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form id="kegiatanForm">
-                    <div class="modal-body pb-0">
-                        <input type="hidden" id="event_id">
-                        <div class="row g-3">
-                            <div class="col-md-12">
-                                <label class="form-label">Unit Kerja</label>
-                                <select class="form-select select2" id="unit" required>
-                                    <option value="">Pilih Unit...</option>
-                                    <option value="Akademik dan Kerja Sama">Akademik dan Kerja Sama</option>
-                                    <option value="Non Akademik dan Kemahasiswaan">Non Akademik dan Kemahasiswaan</option>
-                                    <option value="Lembaga Penjaminan Mutu (LPM)">Lembaga Penjaminan Mutu (LPM)</option>
-                                    <option value="LP2M">LP2M</option>
-                                    <option value="Program Studi Pembangunan Sosial">Program Studi Pembangunan Sosial</option>
-                                    <option value="Program Studi Ilmu Pemerintahan">Program Studi Ilmu Pemerintahan</option>
-                                    <option value="Sekretariat">Sekretariat</option>
-                                    <option value="Unit Pangkalan Data & IT">Unit Pangkalan Data & IT</option>
-                                    <option value="Campus Ministry">Campus Ministry</option>
-                                    <option value="Penerimaan Mahasiswa Baru (PMB)">Penerimaan Mahasiswa Baru (PMB)</option>
-                                    <option value="UPT Perpustakaan">UPT Perpustakaan</option>
-                                </select>
-                            </div>
-                            <div class="col-md-12">
-                                <label class="form-label">Nama Kegiatan</label>
-                                <input type="text" class="form-control" id="nama_kegiatan" required placeholder="Contoh: Rapat Koordinasi">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Tanggal Mulai</label>
-                                <!-- Menggunakan class flatpickr-date agar hanya input tanggal -->
-                                <input type="date" class="form-control flatpickr-date" id="tanggal_mulai" required placeholder="YYYY-MM-DD">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Tanggal Selesai</label>
-                                <input type="date" class="form-control flatpickr-date" id="tanggal_selesai" required placeholder="YYYY-MM-DD">
-                            </div>
-                            <div class="col-md-12">
-                                <label class="form-label">PIC / Penanggung Jawab</label>
-                                <select class="form-select select2" id="pic" required>
-                                    <option value="">Pilih Penanggung Jawab...</option>
-                                    <option value="Yulita Eme, S.Sos., M.Si">Yulita Eme, S.Sos., M.Si</option>
-                                    <option value="Ngea Andreas, S.Sos., M.Si">Ngea Andreas, S.Sos., M.Si</option>
-                                    <option value="Fidentus Didakus Darma Saputra, S.IP., M.IP">Fidentus Didakus Darma Saputra, S.IP., M.IP</option>
-                                    <option value="Viktoria Dalima, S.S., M.Hum">Viktoria Dalima, S.S., M.Hum</option>
-                                    <option value="Richardus Beda Toulwala, S.Fil., M.Si">Richardus Beda Toulwala, S.Fil., M.Si</option>
-                                    <option value="Bartholy Antony Surya Lengo, S.IP., MPA">Bartholy Antony Surya Lengo, S.IP., MPA</option>
-                                    <option value="Patricius Marianus Botha, S.Fil., M.Si">Patricius Marianus Botha, S.Fil., M.Si</option>
-                                    <option value="Petronela Somi Kedan, S.E., M.Sc">Petronela Somi Kedan, S.E., M.Sc</option>
-                                    <option value="Helenerius Ajo Leda, S. Sos., M.I.P">Helenerius Ajo Leda, S. Sos., M.I.P</option>
-                                    <option value="Andrianto Umbu Ndjandji, S.AP., M.A.P">Andrianto Umbu Ndjandji, S.AP., M.A.P</option>
-                                    <option value="Konfridus Roynaldus Buku, S.Fil., M.Sosio">Konfridus Roynaldus Buku, S.Fil., M.Sosio</option>
-                                    <option value="Oktavianus Daluamang Payong, S.I.P., M.I.P">Oktavianus Daluamang Payong, S.I.P., M.I.P</option>
-                                    <option value="Emanuel Natalis, S.Fil., S.H., M.H">Emanuel Natalis, S.Fil., S.H., M.H</option>
-                                    <option value="Dominikus Rangga Hayon,  S.Fil., MA.C">Dominikus Rangga Hayon,  S.Fil., MA.C</option>
-                                    <option value="Herman Yosef Nende Lingge Kumanireng, S.Sos., M.IP">Herman Yosef Nende Lingge Kumanireng, S.Sos., M.IP</option>
-                                    <option value="Patrisius Hinggu Njurumana, S.I.P., M.A">Patrisius Hinggu Njurumana, S.I.P., M.A</option>
-                                    <option value="Raymundus Lullus Rua Raki, S.Fil., M.A">Raymundus Lullus Rua Raki, S.Fil., M.A</option>
-                                    <option value="Domitius Pau, S.Sos., M.A">Domitius Pau, S.Sos., M.A</option>
-                                    <option value="Andreas W. F. Weroh, S.Kom">Andreas W. F. Weroh, S.Kom</option>
-                                    <option value="Maria Yenista Enga No, S.T">Maria Yenista Enga No, S.T</option>
-                                    <option value="Maximilianus Gabriel Janga, S.Sos">Maximilianus Gabriel Janga, S.Sos</option>
-                                    <option value="Lusia Marcelina Mere, S.AP">Lusia Marcelina Mere, S.AP</option>
-                                    <option value="Yohanes Noa, S.IP">Yohanes Noa, S.IP</option>
-                                    <option value="Agustinus Surya N.B.L. Veregrent, S.Kom">Agustinus Surya N.B.L. Veregrent, S.Kom</option>
-                                    <option value="Maria Fransiska Dona, S.Sos">Maria Fransiska Dona, S.Sos</option>
-                                    <option value="Aloysius Kanisius Goo, S.I.Pust">Aloysius Kanisius Goo, S.I.Pust</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer border-top-0 pt-4">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                        <button type="submit" class="btn btn-primary px-4" id="btnSave">Simpan Kegiatan</button>
-                    </div>
-                </form>
+
+
+
+
+
+<form id="kegiatanForm">
+    <div class="modal-body pb-0">
+        <input type="hidden" id="event_id">
+        <div class="row g-3">
+            <!-- TIPE KEGIATAN BARU -->
+            <div class="col-md-12">
+                <label class="form-label fw-bold text-primary">Jenis Kegiatan</label>
+                <select class="form-select border-primary" id="tipe_kegiatan" required>
+                    <option value="Internal">Kegiatan Internal STPM Santa Ursula</option>
+                    <option value="Eksternal">Kegiatan Eksternal (Undangan/Instansi Luar)</option>
+                </select>
+            </div>
+            
+            <div class="col-md-12">
+                <label class="form-label">Unit Kerja / Instansi Penyelenggara</label>
+                <select class="form-select select2" id="unit" required>
+                    <!-- ... (Biarkan daftar option unit kamu di sini seperti biasa) ... -->
+                </select>
+            </div>
+            
+            <div class="col-md-12">
+                <label class="form-label">Nama Kegiatan</label>
+                <input type="text" class="form-control" id="nama_kegiatan" required placeholder="Contoh: Rapat Koordinasi">
+            </div>
+            
+            <!-- DESKRIPSI (HANYA MUNCUL JIKA EKSTERNAL) -->
+            <div class="col-md-12 d-none" id="wrap_deskripsi">
+                <label class="form-label">Deskripsi Kegiatan Eksternal</label>
+                <textarea class="form-control" id="deskripsi" rows="3" placeholder="Contoh: Menghadiri undangan jalan sehat Hari Pancasila dari Pemda Kabupaten Ende..."></textarea>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Tanggal Mulai</label>
+                <input type="text" class="form-control flatpickr-date" id="tanggal_mulai" required placeholder="YYYY-MM-DD">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Tanggal Selesai</label>
+                <input type="text" class="form-control flatpickr-date" id="tanggal_selesai" required placeholder="YYYY-MM-DD">
+            </div>
+            <div class="col-md-12">
+                <label class="form-label">PIC / Delegasi</label>
+                <select class="form-select select2" id="pic" required>
+                    <!-- ... (Biarkan daftar option PIC kamu di sini seperti biasa) ... -->
+                </select>
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer border-top-0 pt-4">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+        <button type="submit" class="btn btn-primary px-4" id="btnSave">Simpan Kegiatan</button>
+    </div>
+</form>
+
+
+
+
+
+
+
             </div>
         </div>
     </div>
