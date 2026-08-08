@@ -9,8 +9,7 @@ const DashboardAnalytics = {
         if (typeof feather !== 'undefined') feather.replace();
         
         this.populateCounters(data);
-        this.renderCharts(data);
-        this.renderHeatmap(data);
+        this.renderCharts(data); // Fungsi renderCharts kini otomatis memanggil renderHeatmap
         this.detectConflicts(data);
     },
 
@@ -42,6 +41,7 @@ const DashboardAnalytics = {
 
     detectConflicts: function(data) {
         let conflicts = [];
+        let conflictingEventIds = new Set(); // Menggunakan Set agar ID kegiatan yang bertabrakan tidak ganda
         
         for (let i = 0; i < data.length; i++) {
             for (let j = i + 1; j < data.length; j++) {
@@ -52,6 +52,8 @@ const DashboardAnalytics = {
 
                 if (start1 <= end2 && start2 <= end1) {
                     conflicts.push({ eventA: data[i], eventB: data[j] });
+                    conflictingEventIds.add(data[i]['ID (UUID)']);
+                    conflictingEventIds.add(data[j]['ID (UUID)']);
                 }
             }
         }
@@ -59,8 +61,8 @@ const DashboardAnalytics = {
         $('#stat-conflicts').text(conflicts.length);
         $('#badge-conflict-count').text(conflicts.length);
 
-        // Kalkulasi Tingkat Bentrok Jadwal (%)
-        const conflictRate = data.length > 0 ? ((conflicts.length / data.length) * 100).toFixed(1) : 0;
+        // PERBAIKAN: Hitung rasio kegiatan yang bermasalah secara akurat
+        const conflictRate = data.length > 0 ? ((conflictingEventIds.size / data.length) * 100).toFixed(1) : 0;
         $('#stat-conflict-rate').text(`${conflictRate}%`);
 
         const listContainer = $('#conflict-list');
@@ -85,43 +87,78 @@ const DashboardAnalytics = {
         }
     },
 
-    // RENDER PEAK WORKLOAD HEATMAP MATRIX
     renderHeatmap: function(data) {
-        const heatmapContainer = $('#heatmap-container');
-        heatmapContainer.empty();
+        const container = $('#heatmap-container');
+        if (container.length === 0) return; // Pelindung Error
+        container.empty();
 
+        // Buat Grid Kosong: 7 Baris (Hari) x 12 Kolom (Bulan)
+        const heatData = Array.from({length: 7}, () => new Array(12).fill(0));
         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-        const monthCounts = new Array(12).fill(0);
+        const dayLabels = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 
+        // Distribusikan Data
         data.forEach(d => {
             const dt = new Date(d['Tanggal Mulai']);
             if (!isNaN(dt.getTime())) {
-                monthCounts[dt.getMonth()]++;
+                const m = dt.getMonth();
+                let day = dt.getDay() - 1; // getDay() 0 adalah Minggu. Kita ubah agar 0 adalah Senin
+                if (day === -1) day = 6; 
+                heatData[day][m]++;
             }
         });
 
-        const maxVal = Math.max(...monthCounts, 1);
+        // Cari Nilai Maksimal untuk gradasi warna
+        let maxVal = 1;
+        heatData.forEach(row => row.forEach(val => { if(val > maxVal) maxVal = val; }));
 
-        monthNames.forEach((month, idx) => {
-            const count = monthCounts[idx];
-            let levelClass = 'heatmap-empty';
-
-            if (count > 0) {
-                const ratio = count / maxVal;
-                if (ratio > 0.6) levelClass = 'heatmap-high';
-                else if (ratio > 0.3) levelClass = 'heatmap-medium';
-                else levelClass = 'heatmap-low';
-            }
-
-            heatmapContainer.append(`
-                <div class="heatmap-box ${levelClass}" title="${month}: ${count} Kegiatan">
-                    ${month}<br><small style="font-size:0.65rem;">${count}</small>
-                </div>
-            `);
+        // Render HTML dengan CSS Inline (Dijamin muncul tanpa perlu edit style.css)
+        let html = '<div style="display:flex; flex-direction:column; gap:4px; overflow-x:auto; padding-bottom:10px;">';
+        
+        // Render Header Bulan
+        html += '<div style="display:flex; gap:4px; margin-left: 30px;">';
+        monthNames.forEach(m => {
+            html += `<div style="width: 25px; text-align:center; font-size:10px; color:#6c757d; font-weight:bold;">${m}</div>`;
         });
+        html += '</div>';
+
+        // Render Baris Hari dan Kotak-Kotaknya
+        for (let r = 0; r < 7; r++) {
+            html += '<div style="display:flex; gap:4px; align-items:center;">';
+            html += `<div style="width: 25px; font-size:10px; color:#6c757d; text-align:right; padding-right:4px; font-weight:bold;">${dayLabels[r]}</div>`;
+            
+            for (let c = 0; c < 12; c++) {
+                const val = heatData[r][c];
+                let bgColor = '#ebedf0'; 
+                let color = '#adb5bd';
+                
+                if (val > 0) {
+                    const ratio = val / maxVal;
+                    if (ratio > 0.75) { bgColor = '#0d6efd'; color = '#ffffff'; } // Tinggi (Biru Tua)
+                    else if (ratio > 0.5) { bgColor = '#4293f5'; color = '#ffffff'; } // Sedang (Biru)
+                    else if (ratio > 0.25) { bgColor = '#8abdf8'; color = '#000000'; } // Rendah (Biru Muda)
+                    else { bgColor = '#cce5ff'; color = '#000000'; } // Sangat Rendah (Pucat)
+                }
+
+                // Kotak Heatmap (Hover Effect & Tooltip bawaan)
+                html += `<div title="${val} Kegiatan di hari ${dayLabels[r]}, Bulan ${monthNames[c]}" 
+                              style="width: 25px; height: 25px; background-color: ${bgColor}; border-radius: 4px; display:flex; align-items:center; justify-content:center; font-size:10px; color:${color}; font-weight:bold; cursor:pointer; transition:all 0.15s ease;" 
+                              onmouseover="this.style.transform='scale(1.2)'; this.style.zIndex=10; this.style.boxShadow='0 2px 5px rgba(0,0,0,0.2)';" 
+                              onmouseout="this.style.transform='scale(1)'; this.style.zIndex=1; this.style.boxShadow='none';">
+                              ${val > 0 ? val : ''}
+                         </div>`;
+            }
+            html += '</div>';
+        }
+        html += '</div>';
+        
+        container.html(html);
     },
 
     renderCharts: function(data) {
+        // Panggil renderHeatmap di sini agar otomatis ter-update saat refresh
+        this.renderHeatmap(data);
+
         const unitMap = {};
         const timeMap = {};
         const picDetailsMap = {}; 
@@ -153,6 +190,7 @@ const DashboardAnalytics = {
 
                 // 3. Durasi Kegiatan (Hari)
                 if (!isNaN(endDt.getTime())) {
+                    // Selisih hari + 1 (misal 12 ke 12 = 1 hari)
                     const durationDays = Math.max(1, Math.round((endDt - startDt) / (1000 * 60 * 60 * 24)) + 1);
                     unitDurationSum[d.Unit] = (unitDurationSum[d.Unit] || 0) + durationDays;
                     unitDurationCount[d.Unit] = (unitDurationCount[d.Unit] || 0) + 1;
@@ -193,117 +231,131 @@ const DashboardAnalytics = {
         if (this.dayOfWeekChartInstance) this.dayOfWeekChartInstance.destroy();
         if (this.avgDurationChartInstance) this.avgDurationChartInstance.destroy();
 
-        // 1. Bar Chart - Trend Tahunan
-        this.barChartInstance = new Chart(document.getElementById('barChart'), {
-            type: 'bar',
-            data: { labels: timeLabels, datasets: [{ label: 'Total Kegiatan', data: timeData, backgroundColor: primaryColor, borderRadius: 4 }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
-        });
+        // 1. Bar Chart - Trend Tahunan (DENGAN PELINDUNG ERROR)
+        const ctxBar = document.getElementById('barChart');
+        if (ctxBar) {
+            this.barChartInstance = new Chart(ctxBar, {
+                type: 'bar',
+                data: { labels: timeLabels, datasets: [{ label: 'Total Kegiatan', data: timeData, backgroundColor: primaryColor, borderRadius: 4 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+            });
+        }
 
-        // 2. Doughnut Chart - Proporsi Unit
-        this.doughnutChartInstance = new Chart(document.getElementById('doughnutChart'), {
-            type: 'doughnut',
-            data: { labels: Object.keys(unitMap), datasets: [{ data: Object.values(unitMap), backgroundColor: bgColors.slice(0, Object.keys(unitMap).length) }] },
-            options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } } } }
-        });
+        // 2. Doughnut Chart - Proporsi Unit (DENGAN PELINDUNG ERROR)
+        const ctxDoughnut = document.getElementById('doughnutChart');
+        if (ctxDoughnut) {
+            this.doughnutChartInstance = new Chart(ctxDoughnut, {
+                type: 'doughnut',
+                data: { labels: Object.keys(unitMap), datasets: [{ data: Object.values(unitMap), backgroundColor: bgColors.slice(0, Object.keys(unitMap).length) }] },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } } } }
+            });
+        }
 
-        // 3. Radar Chart - Distribusi Hari Kerja
-        this.dayOfWeekChartInstance = new Chart(document.getElementById('dayOfWeekChart'), {
-            type: 'radar',
-            data: {
-                labels: ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'],
-                datasets: [{
-                    label: 'Jumlah Kegiatan',
-                    data: orderedDayCounts,
-                    backgroundColor: 'rgba(13, 110, 253, 0.2)',
-                    borderColor: '#0d6efd',
-                    pointBackgroundColor: '#0d6efd'
-                }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-        });
+        // 3. Radar Chart - Distribusi Hari Kerja (DENGAN PELINDUNG ERROR)
+        const ctxDay = document.getElementById('dayOfWeekChart');
+        if (ctxDay) {
+            this.dayOfWeekChartInstance = new Chart(ctxDay, {
+                type: 'radar',
+                data: {
+                    labels: ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'],
+                    datasets: [{
+                        label: 'Jumlah Kegiatan',
+                        data: orderedDayCounts,
+                        backgroundColor: 'rgba(13, 110, 253, 0.2)',
+                        borderColor: '#0d6efd',
+                        pointBackgroundColor: '#0d6efd'
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+        }
 
-        // 4. Bar Chart - Rata-rata Durasi Kegiatan
-        this.avgDurationChartInstance = new Chart(document.getElementById('avgDurationChart'), {
-            type: 'bar',
-            data: {
-                labels: avgDurationLabels.map(u => u.split(' ').slice(0, 2).join(' ')),
-                datasets: [{ label: 'Rata-rata Durasi (Hari)', data: avgDurationValues, backgroundColor: '#198754', borderRadius: 4 }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
-        });
+        // 4. Bar Chart - Rata-rata Durasi Kegiatan (DENGAN PELINDUNG ERROR)
+        const ctxAvg = document.getElementById('avgDurationChart');
+        if (ctxAvg) {
+            this.avgDurationChartInstance = new Chart(ctxAvg, {
+                type: 'bar',
+                data: {
+                    labels: avgDurationLabels.map(u => u.split(' ').slice(0, 2).join(' ')), // Nama Unit Singkat
+                    datasets: [{ label: 'Rata-rata Durasi (Hari)', data: avgDurationValues, backgroundColor: '#198754', borderRadius: 4 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+            });
+        }
 
-        // 5. Horizontal Bar Chart - PIC Workload
-        const sortedPIC = Object.keys(picDetailsMap).sort((a,b) => picDetailsMap[b].length - picDetailsMap[a].length).slice(0, 10);
-        const sortedPICData = sortedPIC.map(pic => picDetailsMap[pic].length);
-        const shortLabels = sortedPIC.map(pic => pic.split(' ').slice(0, 2).join(' '));
+        // 5. Horizontal Bar Chart - PIC Workload (DENGAN PELINDUNG ERROR)
+        const ctxPic = document.getElementById('picBarChart');
+        if (ctxPic) {
+            const sortedPIC = Object.keys(picDetailsMap).sort((a,b) => picDetailsMap[b].length - picDetailsMap[a].length).slice(0, 10);
+            const sortedPICData = sortedPIC.map(pic => picDetailsMap[pic].length);
+            const shortLabels = sortedPIC.map(pic => pic.split(' ').slice(0, 2).join(' '));
 
-        this.picBarChartInstance = new Chart(document.getElementById('picBarChart'), {
-            type: 'bar', 
-            data: {
-                labels: shortLabels,
-                datasets: [{ label: 'Total Kegiatan', data: sortedPICData, backgroundColor: '#0dcaf0', borderRadius: 4 }]
-            },
-            options: {
-                indexAxis: 'y', 
-                responsive: true, 
-                maintainAspectRatio: false, 
-                plugins: { 
-                    legend: { display: false },
-                    tooltip: {
-                        padding: 12,
-                        callbacks: {
-                            title: (context) => sortedPIC[context[0].dataIndex],
-                            label: (context) => `Jumlah Kegiatan: ${context.raw}`,
-                            afterBody: (context) => {
-                                const index = context[0].dataIndex;
-                                const picName = sortedPIC[index];
-                                const events = picDetailsMap[picName];
+            this.picBarChartInstance = new Chart(ctxPic, {
+                type: 'bar', 
+                data: {
+                    labels: shortLabels,
+                    datasets: [{ label: 'Total Kegiatan', data: sortedPICData, backgroundColor: '#0dcaf0', borderRadius: 4 }]
+                },
+                options: {
+                    indexAxis: 'y', 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: {
+                            padding: 12,
+                            callbacks: {
+                                title: (context) => sortedPIC[context[0].dataIndex],
+                                label: (context) => `Jumlah Kegiatan: ${context.raw}`,
+                                afterBody: (context) => {
+                                    const index = context[0].dataIndex;
+                                    const picName = sortedPIC[index];
+                                    const events = picDetailsMap[picName];
 
-                                events.sort((a,b) => new Date(a.tanggal) - new Date(b.tanggal));
+                                    events.sort((a,b) => new Date(a.tanggal) - new Date(b.tanggal));
 
-                                let lines = ['', 'Rincian Kegiatan:'];
-                                const maxDisplay = 10;
+                                    let lines = ['', 'Rincian Kegiatan:'];
+                                    const maxDisplay = 10;
 
-                                for(let i = 0; i < events.length; i++) {
-                                    if (i >= maxDisplay) {
-                                        lines.push(`... dan ${events.length - maxDisplay} kegiatan lainnya.`);
-                                        lines.push(`(👉 Klik batang grafik ini untuk filter ke Tabel)`);
-                                        break;
+                                    for(let i = 0; i < events.length; i++) {
+                                        if (i >= maxDisplay) {
+                                            lines.push(`... dan ${events.length - maxDisplay} lainnya.`);
+                                            lines.push(`(👉 Klik batang ini untuk filter Tabel)`);
+                                            break;
+                                        }
+                                        const dt = new Date(events[i].tanggal);
+                                        const monthYear = `${monthNames[dt.getMonth()]} ${dt.getFullYear()}`;
+                                        let evtName = events[i].nama;
+                                        if(evtName.length > 30) evtName = evtName.substring(0, 27) + '...';
+
+                                        lines.push(`• ${evtName} (${monthYear})`);
                                     }
-                                    
-                                    const dt = new Date(events[i].tanggal);
-                                    const monthYear = `${monthNames[dt.getMonth()]} ${dt.getFullYear()}`;
-                                    let evtName = events[i].nama;
-                                    if(evtName.length > 30) evtName = evtName.substring(0, 27) + '...';
-
-                                    lines.push(`• ${evtName} (${monthYear})`);
+                                    return lines;
                                 }
-                                return lines;
                             }
                         }
-                    }
-                },
-                scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } },
-                onClick: (event, elements) => {
-                    if (elements.length > 0) {
-                        const index = elements[0].index;
-                        const fullPicName = sortedPIC[index];
+                    },
+                    scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } },
+                    onClick: (event, elements) => {
+                        if (elements.length > 0) {
+                            const index = elements[0].index;
+                            const fullPicName = sortedPIC[index];
 
-                        $('.menu-link[data-target="table-view"]').trigger('click');
+                            $('.menu-link[data-target="table-view"]').trigger('click');
 
-                        setTimeout(() => {
-                            const table = $('#dataTable').DataTable();
-                            table.column(5).search(fullPicName).draw();
+                            setTimeout(() => {
+                                const table = $('#dataTable').DataTable();
+                                table.column(5).search(fullPicName).draw();
 
-                            Swal.fire({
-                                toast: true, position: 'top-end', showConfirmButton: false, timer: 5000,
-                                icon: 'info', title: `Tabel difilter khusus untuk PIC:\n${fullPicName}`
-                            });
-                        }, 250);
+                                Swal.fire({
+                                    toast: true, position: 'top-end', showConfirmButton: false, timer: 5000,
+                                    icon: 'info', title: `Tabel difilter khusus untuk:\n${fullPicName}`
+                                });
+                            }, 250);
+                        }
                     }
                 }
-            }
-        });
+            });
+        }
     }
 };
