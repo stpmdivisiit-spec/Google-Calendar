@@ -80,31 +80,33 @@ const DashboardAnalytics = {
 
     renderCharts: function(data) {
         const unitMap = {};
-        const picMap = {};
-        
-        // PENGATURAN BARU: Waktu Dinamis (Tahun dan Bulan)
         const timeMap = {};
+        
+        // PENGATURAN BARU: Menyimpan Detail Kegiatan per PIC, bukan hanya angkanya saja
+        const picDetailsMap = {}; 
         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 
         data.forEach(d => {
-            // Mapping Unit & PIC
             unitMap[d.Unit] = (unitMap[d.Unit] || 0) + 1;
-            picMap[d.PIC] = (picMap[d.PIC] || 0) + 1;
             
-            // Mapping Waktu Dinamis (Kunci: YYYY-MM untuk sorting yang benar)
+            // Simpan detail untuk Tooltip PIC
+            if (!picDetailsMap[d.PIC]) picDetailsMap[d.PIC] = [];
+            picDetailsMap[d.PIC].push({
+                nama: d['Nama Kegiatan'],
+                tanggal: d['Tanggal Mulai']
+            });
+
             const date = new Date(d['Tanggal Mulai']);
             if (!isNaN(date.getTime())) {
                 const year = date.getFullYear();
-                const month = String(date.getMonth() + 1).padStart(2, '0'); // Menjadi '01', '02', dst
+                const month = String(date.getMonth() + 1).padStart(2, '0');
                 const key = `${year}-${month}`; 
                 timeMap[key] = (timeMap[key] || 0) + 1;
             }
         });
 
-        // Urutkan kunci waktu secara kronologis (dari masa lalu ke masa depan)
+        // Pengaturan Label Waktu (Trend Tahunan)
         const sortedTimeKeys = Object.keys(timeMap).sort();
-        
-        // Siapkan Array untuk Label (Contoh: "Agu 2026") dan Data untuk Grafik
         const timeLabels = [];
         const timeData = [];
 
@@ -112,12 +114,10 @@ const DashboardAnalytics = {
             const parts = key.split('-');
             const year = parts[0];
             const monthIndex = parseInt(parts[1], 10) - 1;
-            
             timeLabels.push(`${monthNames[monthIndex]} ${year}`);
             timeData.push(timeMap[key]);
         });
 
-        // Warna Tema
         const primaryColor = 'rgba(13, 110, 253, 0.85)';
         const bgColors = ['#0d6efd', '#dc3545', '#6f42c1', '#198754', '#0dcaf0', '#fd7e14', '#ffc107', '#20c997', '#e83e8c', '#6610f2', '#d63384'];
 
@@ -129,18 +129,11 @@ const DashboardAnalytics = {
         this.barChartInstance = new Chart(document.getElementById('barChart'), {
             type: 'bar',
             data: {
-                labels: timeLabels, // Menggunakan label dinamis (Bulan Tahun)
-                datasets: [{ 
-                    label: 'Total Kegiatan', 
-                    data: timeData, // Menggunakan data yang sudah disortir
-                    backgroundColor: primaryColor, 
-                    borderRadius: 4 
-                }]
+                labels: timeLabels, 
+                datasets: [{ label: 'Total Kegiatan', data: timeData, backgroundColor: primaryColor, borderRadius: 4 }]
             },
             options: { 
-                responsive: true, 
-                maintainAspectRatio: false, 
-                plugins: { legend: { display: false } },
+                responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
                 scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
             }
         });
@@ -158,23 +151,95 @@ const DashboardAnalytics = {
             }
         });
 
-        // 3. Horizontal Bar Chart - Top PIC Workload (Top 10)
-        const sortedPIC = Object.keys(picMap).sort((a,b) => picMap[b] - picMap[a]).slice(0, 10);
-        const sortedPICData = sortedPIC.map(pic => picMap[pic]);
-        const shortLabels = sortedPIC.map(pic => pic.split(' ').slice(0, 2).join(' '));
+        // 3. Horizontal Bar Chart - Beban Kerja PIC Terperinci
+        // Urutkan PIC berdasarkan total kegiatan terbanyak
+        const sortedPIC = Object.keys(picDetailsMap).sort((a,b) => picDetailsMap[b].length - picDetailsMap[a].length).slice(0, 10);
+        const sortedPICData = sortedPIC.map(pic => picDetailsMap[pic].length);
+        const shortLabels = sortedPIC.map(pic => pic.split(' ').slice(0, 2).join(' ')); // Nama Panggilan
 
         this.picBarChartInstance = new Chart(document.getElementById('picBarChart'), {
             type: 'bar', 
             data: {
                 labels: shortLabels,
-                datasets: [{ label: 'Jumlah Kegiatan', data: sortedPICData, backgroundColor: '#0dcaf0', borderRadius: 4 }]
+                datasets: [{ label: 'Total Kegiatan', data: sortedPICData, backgroundColor: '#0dcaf0', borderRadius: 4 }]
             },
             options: {
                 indexAxis: 'y', 
                 responsive: true, 
                 maintainAspectRatio: false, 
-                plugins: { legend: { display: false } },
-                scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } } 
+                plugins: { 
+                    legend: { display: false },
+                    tooltip: {
+                        padding: 12,
+                        titleFont: { size: 14 },
+                        bodyFont: { size: 13 },
+                        callbacks: {
+                            // Mengganti judul tooltip dengan nama lengkap PIC
+                            title: function(context) {
+                                return sortedPIC[context[0].dataIndex]; 
+                            },
+                            // Menambahkan teks "Jumlah Kegiatan: X"
+                            label: function(context) {
+                                return `Jumlah Kegiatan: ${context.raw}`;
+                            },
+                            // Menambahkan Rincian Kegiatan di bawah Tooltip
+                            afterBody: function(context) {
+                                const index = context[0].dataIndex;
+                                const picName = sortedPIC[index];
+                                const events = picDetailsMap[picName];
+
+                                // Urutkan rincian kegiatan dari yang terdekat
+                                events.sort((a,b) => new Date(a.tanggal) - new Date(b.tanggal));
+
+                                let lines = ['', 'Rincian Kegiatan:'];
+                                const maxDisplay = 10; // Batasi maksimal 10 di tooltip agar tidak tumpah
+
+                                for(let i = 0; i < events.length; i++) {
+                                    if (i >= maxDisplay) {
+                                        lines.push(`... dan ${events.length - maxDisplay} kegiatan lainnya.`);
+                                        lines.push(`(👉 Klik batang grafik ini untuk melihat selengkapnya di Tabel)`);
+                                        break;
+                                    }
+                                    
+                                    const dt = new Date(events[i].tanggal);
+                                    const monthYear = `${monthNames[dt.getMonth()]} ${dt.getFullYear()}`;
+                                    
+                                    // Potong judul jika terlalu panjang
+                                    let evtName = events[i].nama;
+                                    if(evtName.length > 30) evtName = evtName.substring(0, 27) + '...';
+
+                                    lines.push(`• ${evtName} (${monthYear})`);
+                                }
+                                return lines;
+                            }
+                        }
+                    }
+                },
+                scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } },
+                
+                // FITUR REKOMENDASI: Klik untuk memfilter ke tabel data
+                onClick: (event, elements) => {
+                    if (elements.length > 0) {
+                        const index = elements[0].index;
+                        const fullPicName = sortedPIC[index];
+
+                        // 1. Simulasikan klik pada menu sidebar 'Data Kegiatan'
+                        $('.menu-link[data-target="table-view"]').trigger('click');
+
+                        // 2. Beri jeda sejenak agar animasi pindah tab selesai, lalu otomatis filter tabelnya
+                        setTimeout(() => {
+                            const table = $('#dataTable').DataTable();
+                            // Kolom ke-6 (index 5) adalah kolom PIC
+                            table.column(5).search(fullPicName).draw();
+
+                            // Munculkan notifikasi Toast
+                            Swal.fire({
+                                toast: true, position: 'top-end', showConfirmButton: false, timer: 5000,
+                                icon: 'info', title: `Tabel berhasil difilter khusus untuk PIC:\n${fullPicName}`
+                            });
+                        }, 250);
+                    }
+                }
             }
         });
     }
