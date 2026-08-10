@@ -17,7 +17,6 @@ const app = {
         
         await this.loadData();
         
-        // Sembunyikan loader dan tampilkan konten utama
         $('#app-loader').addClass('d-none');
         $('#app-content').removeClass('d-none');
         
@@ -27,11 +26,9 @@ const app = {
     },
 
     setupPlugins: function() {
-        // Plugin Form Tambah Kegiatan
         $('.select2').select2({ theme: 'bootstrap-5', dropdownParent: $('#kegiatanModal') });
         $('.flatpickr-date').flatpickr({ enableTime: false, dateFormat: "Y-m-d" });
 
-        // Plugin Filter Tabel
         $('.select2-filter').select2({ theme: 'bootstrap-5' });
         $('.flatpickr-range').flatpickr({
             mode: "range",          
@@ -41,9 +38,9 @@ const app = {
         });
     },
 
-setupDataTablesFilter: function() {
+    setupDataTablesFilter: function() {
         $.fn.dataTable.ext.search.push((settings, data, dataIndex) => {
-            // FILTER UNTUK TABEL INTERNAL
+            // Filter Tabel Internal
             if (settings.nTable.id === 'dataTable' && this.table) {
                 const filterUnit = $('#filterUnit').val();
                 const filterDate = $('#filterDate').val(); 
@@ -64,7 +61,7 @@ setupDataTablesFilter: function() {
                 return unitMatch && dateMatch;
             }
 
-            // FILTER UNTUK TABEL EKSTERNAL
+            // Filter Tabel Eksternal
             if (settings.nTable.id === 'dataTableExt' && this.tableExt) {
                 const filterUnit = $('#filterUnitExt').val();
                 const filterDate = $('#filterDateExt').val(); 
@@ -89,7 +86,7 @@ setupDataTablesFilter: function() {
     },
 
     setupTemplateInteractions: function() {
-        // Logika Dropdown Tipe Kegiatan (Internal/Eksternal)
+        // Tipe Kegiatan Toggle
         $('#tipe_kegiatan').on('change', function() {
             if ($(this).val() === 'Eksternal') {
                 $('#wrap_deskripsi').removeClass('d-none');
@@ -100,20 +97,18 @@ setupDataTablesFilter: function() {
             }
         });
 
-        // Toggle Sidebar
         $('#sidebarToggle').on('click', function(e) {
             e.preventDefault(); 
             $('body').toggleClass('sb-sidenav-toggled');
         });
 
-        // Toggle Dark/Light Mode
         $('#themeToggle').on('click', function() {
             $('body').toggleClass('dark-mode');
             const isDark = $('body').hasClass('dark-mode');
             $(this).html(isDark ? '<i class="fas fa-sun"></i> Mode' : '<i class="fas fa-moon"></i> Mode');
         });
 
-        // Navigasi Antar Halaman (SPA)
+        // Navigasi SPA
         $('.menu-link').on('click', (e) => {
             e.preventDefault();
             const $this = $(e.currentTarget);
@@ -136,18 +131,15 @@ setupDataTablesFilter: function() {
 
             if (target === 'calendar-view' && this.calendar) {
                 setTimeout(() => { this.calendar.render(); }, 100);
-            } 
+            } else if (target === 'table-view') {
+                setTimeout(() => { 
+                    if (this.table) this.table.columns.adjust().responsive.recalc(); 
+                    if (this.tableExt) this.tableExt.columns.adjust().responsive.recalc();
+                }, 100);
+            }
+        });
 
-
-
-else if (target === 'table-view') {
-            setTimeout(() => { 
-                if (this.table) this.table.columns.adjust().responsive.recalc(); 
-                if (this.tableExt) this.tableExt.columns.adjust().responsive.recalc(); 
-            }, 100);
-        }
-
-        // Event Listener: Filter DataTables INTERNAL
+        // Filter Tabel Internal
         $('#filterUnit, #filterDate').on('change', () => { if (this.table) this.table.draw(); });
         $('#btnResetFilter').on('click', () => {
             $('#filterUnit').val('').trigger('change');
@@ -155,7 +147,7 @@ else if (target === 'table-view') {
             if (this.table) this.table.draw();
         });
 
-        // Event Listener: Filter DataTables EKSTERNAL
+        // Filter Tabel Eksternal
         $('#filterUnitExt, #filterDateExt').on('change', () => { if (this.tableExt) this.tableExt.draw(); });
         $('#btnResetFilterExt').on('click', () => {
             $('#filterUnitExt').val('').trigger('change');
@@ -163,23 +155,6 @@ else if (target === 'table-view') {
             if (this.tableExt) this.tableExt.draw();
         });
 
-
-
-        });
-
-        // Event Listener: Filter DataTables
-        $('#filterUnit, #filterDate').on('change', () => {
-            if (this.table) this.table.draw();
-        });
-
-        // Event Listener: Reset Filter
-        $('#btnResetFilter').on('click', () => {
-            $('#filterUnit').val('').trigger('change');
-            document.querySelector('#filterDate')._flatpickr.clear();
-            if (this.table) this.table.draw();
-        });
-
-        // Event Listener: Import CSV
         $('#fileCsv').on('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -187,7 +162,6 @@ else if (target === 'table-view') {
             $(e.target).val(''); 
         });
 
-        // Event Listener: Submit Form Tambah/Edit
         $('#kegiatanForm').on('submit', (e) => {
             e.preventDefault();
             this.saveEvent();
@@ -205,7 +179,7 @@ else if (target === 'table-view') {
     },
 
     refreshUI: function() {
-const dataInternal = this.eventsData.filter(d => d.Tipe !== 'Eksternal');
+        const dataInternal = this.eventsData.filter(d => d.Tipe !== 'Eksternal');
         const dataEksternal = this.eventsData.filter(d => d.Tipe === 'Eksternal');
 
         if (this.table) {
@@ -218,6 +192,11 @@ const dataInternal = this.eventsData.filter(d => d.Tipe !== 'Eksternal');
             this.tableExt.rows.add(dataEksternal);
             this.tableExt.draw();
         }
+        if (this.calendar) {
+            const formattedEvents = this.formatEventsForCalendar(this.eventsData);
+            this.calendar.removeAllEvents();
+            this.calendar.addEventSource(formattedEvents);
+        }
         DashboardAnalytics.populateCounters(this.eventsData);
         DashboardAnalytics.renderCharts(this.eventsData);
         DashboardAnalytics.detectConflicts(this.eventsData);
@@ -227,8 +206,6 @@ const dataInternal = this.eventsData.filter(d => d.Tipe !== 'Eksternal');
         return data.map(item => {
             const startDate = new Date(item['Tanggal Mulai']);
             const endDate = new Date(item['Tanggal Selesai']);
-            
-            // FullCalendar Fix: Tambah 1 hari ke End Date
             const exclusiveEndDate = new Date(endDate);
             exclusiveEndDate.setDate(exclusiveEndDate.getDate() + 1);
 
@@ -236,7 +213,6 @@ const dataInternal = this.eventsData.filter(d => d.Tipe !== 'Eksternal');
             let bgColor = this.getUnitColorCode(item.Unit);
             let textColor = '#ffffff';
 
-            // Jika eksternal, gunakan warna Kuning mencolok
             if (item.Tipe === 'Eksternal') {
                 eventTitle = `[EKSTERNAL] ${item['Nama Kegiatan']}`;
                 bgColor = '#ffc107'; 
@@ -257,34 +233,43 @@ const dataInternal = this.eventsData.filter(d => d.Tipe !== 'Eksternal');
         });
     },
 
-
-initDataTables: function() {
-        // Pisahkan Data
+    initDataTables: function() {
         const dataInternal = this.eventsData.filter(d => d.Tipe !== 'Eksternal');
         const dataEksternal = this.eventsData.filter(d => d.Tipe === 'Eksternal');
 
-        // Pengaturan Tombol Export UNGU
-        const dtButtons = [
+        const dtDom = '<"row align-items-center mb-3"<"col-sm-12 col-md-6"B><"col-sm-12 col-md-6 d-flex justify-content-md-end"f>>rt<"row align-items-center mt-3"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7 d-flex justify-content-md-end"p>>';
+
+        const dtButtonsInt = [
+            { extend: 'copy', text: '<i class="fas fa-copy me-1"></i> Copy', className: 'btn btn-sm btn-outline-primary mb-2' },
+            { extend: 'excel', text: '<i class="fas fa-file-excel me-1"></i> Excel', className: 'btn btn-sm btn-outline-success mb-2' },
+            { extend: 'pdf', text: '<i class="fas fa-file-pdf me-1"></i> PDF', className: 'btn btn-sm btn-outline-danger mb-2' },
+            { extend: 'print', text: '<i class="fas fa-print me-1"></i> Print', className: 'btn btn-sm btn-outline-secondary mb-2' }
+        ];
+
+        const dtButtonsExt = [
             { extend: 'copy', text: '<i class="fas fa-copy me-1"></i> Copy', className: 'btn-purple mb-2' },
             { extend: 'excel', text: '<i class="fas fa-file-excel me-1"></i> Excel', className: 'btn-purple mb-2' },
             { extend: 'pdf', text: '<i class="fas fa-file-pdf me-1"></i> PDF', className: 'btn-purple mb-2' },
             { extend: 'print', text: '<i class="fas fa-print me-1"></i> Print', className: 'btn-purple mb-2' }
         ];
-        const dtDom = '<"row align-items-center mb-3"<"col-sm-12 col-md-6"B><"col-sm-12 col-md-6 d-flex justify-content-md-end"f>>rt<"row align-items-center mt-3"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7 d-flex justify-content-md-end"p>>';
 
-        // INISIALISASI TABEL INTERNAL
+        // Mencegah error "cannot reinitialize DataTable"
+        if ($.fn.DataTable.isDataTable('#dataTable')) $('#dataTable').DataTable().destroy();
+        if ($.fn.DataTable.isDataTable('#dataTableExt')) $('#dataTableExt').DataTable().destroy();
+
+        // TABEL INTERNAL
         this.table = $('#dataTable').DataTable({
             data: dataInternal,
-            responsive: true, scrollX: true, dom: dtDom, buttons: dtButtons,
+            responsive: true, scrollX: true, dom: dtDom, buttons: dtButtonsInt,
             columns: [
-                { data: null, className: 'text-center', render: (d, t, r, meta) => meta.row + 1 },
-                { data: 'Unit' },
-                { data: 'Nama Kegiatan', className: 'fw-bold text-dark' },
-                { data: 'Tanggal Mulai', render: data => data ? new Date(data).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-' },
-                { data: 'Tanggal Selesai', render: data => data ? new Date(data).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-' },
-                { data: 'PIC' },
+                { data: null, className: 'text-center', defaultContent: '', render: (d, t, r, meta) => meta.row + 1 },
+                { data: 'Unit', defaultContent: '-' },
+                { data: 'Nama Kegiatan', className: 'fw-bold text-dark', defaultContent: '-' },
+                { data: 'Tanggal Mulai', defaultContent: '-', render: data => data ? new Date(data).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-' },
+                { data: 'Tanggal Selesai', defaultContent: '-', render: data => data ? new Date(data).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-' },
+                { data: 'PIC', defaultContent: '-' },
                 { 
-                    data: 'ID (UUID)', className: 'text-center', 
+                    data: 'ID (UUID)', className: 'text-center', defaultContent: '',
                     render: id => `
                         <div class="d-flex justify-content-center gap-2">
                             <button class="btn btn-sm btn-primary btn-icon" onclick="app.editEvent('${id}')" title="Edit"><i class="fas fa-edit"></i></button>
@@ -295,20 +280,20 @@ initDataTables: function() {
             drawCallback: function() { if (typeof feather !== 'undefined') feather.replace(); }
         });
 
-        // INISIALISASI TABEL EKSTERNAL
+        // TABEL EKSTERNAL (Menggunakan defaultContent agar anti-crash)
         this.tableExt = $('#dataTableExt').DataTable({
             data: dataEksternal,
-            responsive: true, scrollX: true, dom: dtDom, buttons: dtButtons,
+            responsive: true, scrollX: true, dom: dtDom, buttons: dtButtonsExt,
             columns: [
-                { data: null, className: 'text-center', render: (d, t, r, meta) => meta.row + 1 },
-                { data: 'Unit', render: data => `<span class="badge bg-warning text-dark">${data}</span>` },
-                { data: 'Nama Kegiatan', className: 'fw-bold text-dark' },
-                { data: 'Deskripsi Kegiatan', render: data => data ? `<div style="white-space: normal;">${data}</div>` : '-' }, // Mencegah teks terpotong
-                { data: 'Tanggal Mulai', render: data => data ? new Date(data).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-' },
-                { data: 'Tanggal Selesai', render: data => data ? new Date(data).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-' },
-                { data: 'PIC' },
+                { data: null, className: 'text-center', defaultContent: '', render: (d, t, r, meta) => meta.row + 1 },
+                { data: 'Unit', defaultContent: '-', render: data => `<span class="badge bg-warning text-dark shadow-sm">${data}</span>` },
+                { data: 'Nama Kegiatan', className: 'fw-bold text-dark', defaultContent: '-' },
+                { data: 'Deskripsi Kegiatan', defaultContent: '-', render: data => data ? `<div style="white-space: normal; min-width: 200px;">${data}</div>` : '-' },
+                { data: 'Tanggal Mulai', defaultContent: '-', render: data => data ? new Date(data).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-' },
+                { data: 'Tanggal Selesai', defaultContent: '-', render: data => data ? new Date(data).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-' },
+                { data: 'PIC', defaultContent: '-' },
                 { 
-                    data: 'ID (UUID)', className: 'text-center', 
+                    data: 'ID (UUID)', className: 'text-center', defaultContent: '',
                     render: id => `
                         <div class="d-flex justify-content-center gap-2">
                             <button class="btn btn-sm btn-primary btn-icon" onclick="app.editEvent('${id}')" title="Edit"><i class="fas fa-edit"></i></button>
@@ -319,8 +304,6 @@ initDataTables: function() {
             drawCallback: function() { if (typeof feather !== 'undefined') feather.replace(); }
         });
     },
-
-
 
     initCalendar: function() {
         const calElement = document.getElementById('calendar');
@@ -363,7 +346,8 @@ initDataTables: function() {
             'Unit Pangkalan Data & IT': '#20c997',
             'Campus Ministry': '#e83e8c',
             'Penerimaan Mahasiswa Baru (PMB)': '#6610f2',
-            'UPT Perpustakaan': '#d63384'
+            'UPT Perpustakaan': '#d63384',
+            'Instansi Eksternal (Luar Kampus)': '#ffc107'
         };
         return colors[unit] || '#6c757d';
     },
@@ -420,7 +404,6 @@ initDataTables: function() {
             const existStart = new Date(event['Tanggal Mulai']).getTime();
             const existEnd = new Date(event['Tanggal Selesai']).getTime();
 
-            // Proteksi dari data Invalid Date
             if (!isNaN(existStart) && !isNaN(existEnd) && !isNaN(newStart) && !isNaN(newEnd)) {
                 if (newStart <= existEnd && existStart <= newEnd) {
                     conflictingEvents.push(`• <b>${event['Nama Kegiatan']}</b> <span class="text-primary">(${event.Unit})</span>`);
@@ -432,11 +415,11 @@ initDataTables: function() {
             Swal.fire({
                 title: '⚠️ Peringatan Tabrakan Jadwal',
                 html: `
-                    <div class="text-start mb-2">Tanggal kegiatan ini berbenturan dengan kegiatan berikut:</div>
+                    <div class="text-start mb-2">Tanggal kegiatan berbenturan dengan:</div>
                     <div class="text-start bg-light p-2 rounded mb-3" style="max-height: 120px; overflow-y: auto; font-size: 0.9rem;">
                         ${conflictingEvents.join('<br>')}
                     </div>
-                    <div class="text-start">Apakah Anda yakin ingin tetap menyimpannya?</div>
+                    <div class="text-start">Apakah kamu yakin ingin tetap menyimpannya?</div>
                 `,
                 icon: 'warning',
                 showCancelButton: true,
@@ -446,9 +429,7 @@ initDataTables: function() {
                 cancelButtonText: 'Batal',
                 reverseButtons: true
             }).then((result) => {
-                if (result.isConfirmed) {
-                    this.executeSaveToServer(action, payload, btn);
-                }
+                if (result.isConfirmed) this.executeSaveToServer(action, payload, btn);
             });
         } else {
             this.executeSaveToServer(action, payload, btn);
@@ -537,7 +518,6 @@ initDataTables: function() {
                     return;
                 }
 
-                // Header harus mengandung: Tipe Kegiatan, Unit, Nama Kegiatan, Tanggal Mulai, Tanggal Selesai, PIC, Deskripsi (opsional)
                 const requiredHeaders = ['Tipe Kegiatan', 'Unit', 'Nama Kegiatan', 'Tanggal Mulai', 'Tanggal Selesai', 'PIC'];
                 const fileHeaders = Object.keys(data[0]);
                 const isValid = requiredHeaders.every(h => fileHeaders.includes(h));
@@ -546,19 +526,15 @@ initDataTables: function() {
                     Swal.fire('Format Salah', 'Pastikan header CSV memiliki kolom: Tipe Kegiatan, Unit, Nama Kegiatan, Tanggal Mulai, Tanggal Selesai, PIC', 'error');
                     return;
                 }
-
                 this.processBulkImport(data);
             },
-            error: () => {
-                this.toast('Gagal membaca file CSV', 'error');
-            }
+            error: () => { this.toast('Gagal membaca file CSV', 'error'); }
         });
     },
 
     processBulkImport: async function(dataList) {
         const total = dataList.length;
-        let successCount = 0;
-        let errorCount = 0;
+        let successCount = 0; let errorCount = 0;
 
         Swal.fire({
             title: 'Mengimpor Data...',
@@ -578,25 +554,15 @@ initDataTables: function() {
                 id: "", 
                 tipe: row['Tipe Kegiatan'] === 'Eksternal' ? 'Eksternal' : 'Internal',
                 deskripsi: row['Deskripsi'] || '',
-                unit: row['Unit'],
-                nama_kegiatan: row['Nama Kegiatan'],
-                tanggal_mulai: row['Tanggal Mulai'],
-                tanggal_selesai: row['Tanggal Selesai'],
-                pic: row['PIC']
+                unit: row['Unit'], nama_kegiatan: row['Nama Kegiatan'],
+                tanggal_mulai: row['Tanggal Mulai'], tanggal_selesai: row['Tanggal Selesai'], pic: row['PIC']
             };
 
             try {
-                const response = await fetch(GAS_WEB_APP_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: 'add', payload: payload })
-                });
+                const response = await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: 'add', payload: payload }) });
                 const result = await response.json();
-                
-                if (result.status === 'success') successCount++;
-                else errorCount++;
-            } catch (error) {
-                errorCount++;
-            }
+                if (result.status === 'success') successCount++; else errorCount++;
+            } catch (error) { errorCount++; }
 
             const percent = Math.round(((i + 1) / total) * 100);
             $('#import-progress').css('width', percent + '%').text(percent + '%');
@@ -608,9 +574,7 @@ initDataTables: function() {
             html: `Berhasil ditambahkan: <b>${successCount}</b><br>Gagal / Duplikat: <b>${errorCount}</b>`,
             icon: errorCount > 0 ? 'warning' : 'success',
             confirmButtonText: 'Selesai'
-        }).then(() => {
-            this.loadData().then(() => this.refreshUI());
-        });
+        }).then(() => { this.loadData().then(() => this.refreshUI()); });
     },
 
     toast: function(message, icon) {
