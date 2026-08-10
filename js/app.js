@@ -7,6 +7,7 @@ const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxb_eQbMQtpR3sS
 const app = {
     eventsData: [],
     table: null,
+    tableExt: null,
     calendar: null,
 
     init: async function() {
@@ -40,38 +41,50 @@ const app = {
         });
     },
 
-    setupDataTablesFilter: function() {
-        // Mendaftarkan logika pencarian kustom ke DataTables
+setupDataTablesFilter: function() {
         $.fn.dataTable.ext.search.push((settings, data, dataIndex) => {
-            if (settings.nTable.id !== 'dataTable') return true;
-            if (!this.table) return true;
+            // FILTER UNTUK TABEL INTERNAL
+            if (settings.nTable.id === 'dataTable' && this.table) {
+                const filterUnit = $('#filterUnit').val();
+                const filterDate = $('#filterDate').val(); 
+                const rowData = this.table.row(dataIndex).data(); 
+                if (!rowData) return true;
 
-            const filterUnit = $('#filterUnit').val();
-            const filterDate = $('#filterDate').val(); 
-            
-            const rowData = this.table.row(dataIndex).data(); 
-            if (!rowData) return true;
-
-            // 1. Pengecekan Unit
-            const unitMatch = filterUnit === "" || rowData.Unit === filterUnit;
-            
-            // 2. Pengecekan Rentang Tanggal
-            let dateMatch = true;
-            if (filterDate) {
-                const eventStart = new Date(rowData['Tanggal Mulai']).setHours(0,0,0,0);
-
-                if (filterDate.includes(' to ')) {
-                    const dates = filterDate.split(' to ');
-                    const startFilter = new Date(dates[0]).setHours(0,0,0,0);
-                    const endFilter = new Date(dates[1]).setHours(23,59,59,999);
-                    dateMatch = (eventStart >= startFilter && eventStart <= endFilter);
-                } else {
-                    const targetDate = new Date(filterDate).setHours(0,0,0,0);
-                    dateMatch = (eventStart === targetDate);
+                const unitMatch = filterUnit === "" || rowData.Unit === filterUnit;
+                let dateMatch = true;
+                if (filterDate) {
+                    const eventStart = new Date(rowData['Tanggal Mulai']).setHours(0,0,0,0);
+                    if (filterDate.includes(' to ')) {
+                        const dates = filterDate.split(' to ');
+                        dateMatch = (eventStart >= new Date(dates[0]).setHours(0,0,0,0) && eventStart <= new Date(dates[1]).setHours(23,59,59,999));
+                    } else {
+                        dateMatch = (eventStart === new Date(filterDate).setHours(0,0,0,0));
+                    }
                 }
+                return unitMatch && dateMatch;
             }
 
-            return unitMatch && dateMatch;
+            // FILTER UNTUK TABEL EKSTERNAL
+            if (settings.nTable.id === 'dataTableExt' && this.tableExt) {
+                const filterUnit = $('#filterUnitExt').val();
+                const filterDate = $('#filterDateExt').val(); 
+                const rowData = this.tableExt.row(dataIndex).data(); 
+                if (!rowData) return true;
+
+                const unitMatch = filterUnit === "" || rowData.Unit === filterUnit;
+                let dateMatch = true;
+                if (filterDate) {
+                    const eventStart = new Date(rowData['Tanggal Mulai']).setHours(0,0,0,0);
+                    if (filterDate.includes(' to ')) {
+                        const dates = filterDate.split(' to ');
+                        dateMatch = (eventStart >= new Date(dates[0]).setHours(0,0,0,0) && eventStart <= new Date(dates[1]).setHours(23,59,59,999));
+                    } else {
+                        dateMatch = (eventStart === new Date(filterDate).setHours(0,0,0,0));
+                    }
+                }
+                return unitMatch && dateMatch;
+            }
+            return true;
         });
     },
 
@@ -123,9 +136,35 @@ const app = {
 
             if (target === 'calendar-view' && this.calendar) {
                 setTimeout(() => { this.calendar.render(); }, 100);
-            } else if (target === 'table-view' && this.table) {
-                setTimeout(() => { this.table.columns.adjust().responsive.recalc(); }, 100);
-            }
+            } 
+
+
+
+else if (target === 'table-view') {
+            setTimeout(() => { 
+                if (this.table) this.table.columns.adjust().responsive.recalc(); 
+                if (this.tableExt) this.tableExt.columns.adjust().responsive.recalc(); 
+            }, 100);
+        }
+
+        // Event Listener: Filter DataTables INTERNAL
+        $('#filterUnit, #filterDate').on('change', () => { if (this.table) this.table.draw(); });
+        $('#btnResetFilter').on('click', () => {
+            $('#filterUnit').val('').trigger('change');
+            document.querySelector('#filterDate')._flatpickr.clear();
+            if (this.table) this.table.draw();
+        });
+
+        // Event Listener: Filter DataTables EKSTERNAL
+        $('#filterUnitExt, #filterDateExt').on('change', () => { if (this.tableExt) this.tableExt.draw(); });
+        $('#btnResetFilterExt').on('click', () => {
+            $('#filterUnitExt').val('').trigger('change');
+            document.querySelector('#filterDateExt')._flatpickr.clear();
+            if (this.tableExt) this.tableExt.draw();
+        });
+
+
+
         });
 
         // Event Listener: Filter DataTables
@@ -166,15 +205,18 @@ const app = {
     },
 
     refreshUI: function() {
+const dataInternal = this.eventsData.filter(d => d.Tipe !== 'Eksternal');
+        const dataEksternal = this.eventsData.filter(d => d.Tipe === 'Eksternal');
+
         if (this.table) {
             this.table.clear();
-            this.table.rows.add(this.eventsData);
+            this.table.rows.add(dataInternal);
             this.table.draw();
         }
-        if (this.calendar) {
-            const formattedEvents = this.formatEventsForCalendar(this.eventsData);
-            this.calendar.removeAllEvents();
-            this.calendar.addEventSource(formattedEvents);
+        if (this.tableExt) {
+            this.tableExt.clear();
+            this.tableExt.rows.add(dataEksternal);
+            this.tableExt.draw();
         }
         DashboardAnalytics.populateCounters(this.eventsData);
         DashboardAnalytics.renderCharts(this.eventsData);
@@ -215,57 +257,70 @@ const app = {
         });
     },
 
-    initDataTables: function() {
+
+initDataTables: function() {
+        // Pisahkan Data
+        const dataInternal = this.eventsData.filter(d => d.Tipe !== 'Eksternal');
+        const dataEksternal = this.eventsData.filter(d => d.Tipe === 'Eksternal');
+
+        // Pengaturan Tombol Export UNGU
+        const dtButtons = [
+            { extend: 'copy', text: '<i class="fas fa-copy me-1"></i> Copy', className: 'btn-purple mb-2' },
+            { extend: 'excel', text: '<i class="fas fa-file-excel me-1"></i> Excel', className: 'btn-purple mb-2' },
+            { extend: 'pdf', text: '<i class="fas fa-file-pdf me-1"></i> PDF', className: 'btn-purple mb-2' },
+            { extend: 'print', text: '<i class="fas fa-print me-1"></i> Print', className: 'btn-purple mb-2' }
+        ];
+        const dtDom = '<"row align-items-center mb-3"<"col-sm-12 col-md-6"B><"col-sm-12 col-md-6 d-flex justify-content-md-end"f>>rt<"row align-items-center mt-3"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7 d-flex justify-content-md-end"p>>';
+
+        // INISIALISASI TABEL INTERNAL
         this.table = $('#dataTable').DataTable({
-            data: this.eventsData,
-            responsive: true,
-            scrollX: true,
-            dom: '<"row align-items-center mb-3"<"col-sm-12 col-md-6"B><"col-sm-12 col-md-6 d-flex justify-content-md-end"f>>rt<"row align-items-center mt-3"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7 d-flex justify-content-md-end"p>>',
-            buttons: [
-                { extend: 'copy', text: '<i class="fas fa-copy me-1"></i> Copy', className: 'btn-copy mb-2' },
-                { extend: 'excel', text: '<i class="fas fa-file-excel me-1"></i> Excel', className: 'btn-excel mb-2' },
-                { extend: 'pdf', text: '<i class="fas fa-file-pdf me-1"></i> PDF', className: 'btn-pdf mb-2' },
-                { extend: 'print', text: '<i class="fas fa-print me-1"></i> Print', className: 'btn-print mb-2' }
-            ],
+            data: dataInternal,
+            responsive: true, scrollX: true, dom: dtDom, buttons: dtButtons,
             columns: [
                 { data: null, className: 'text-center', render: (d, t, r, meta) => meta.row + 1 },
                 { data: 'Unit' },
-                { 
-                    data: 'Nama Kegiatan', 
-                    className: 'fw-bold text-dark',
-                    render: (data, type, row) => {
-                        // Badge untuk Kegiatan Eksternal
-                        if (row.Tipe === 'Eksternal') {
-                            return `${data} <span class="badge bg-warning text-dark ms-2 shadow-sm"><i class="fas fa-external-link-alt me-1"></i>Eksternal</span>`;
-                        }
-                        return data;
-                    }
-                },
-                { 
-                    data: 'Tanggal Mulai', 
-                    render: data => data ? new Date(data).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'
-                },
-                { 
-                    data: 'Tanggal Selesai', 
-                    render: data => data ? new Date(data).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'
-                },
+                { data: 'Nama Kegiatan', className: 'fw-bold text-dark' },
+                { data: 'Tanggal Mulai', render: data => data ? new Date(data).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-' },
+                { data: 'Tanggal Selesai', render: data => data ? new Date(data).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-' },
                 { data: 'PIC' },
                 { 
-                    data: 'ID (UUID)', 
-                    className: 'text-center', 
+                    data: 'ID (UUID)', className: 'text-center', 
                     render: id => `
                         <div class="d-flex justify-content-center gap-2">
                             <button class="btn btn-sm btn-primary btn-icon" onclick="app.editEvent('${id}')" title="Edit"><i class="fas fa-edit"></i></button>
                             <button class="btn btn-sm btn-danger btn-icon" onclick="app.deleteEvent('${id}')" title="Hapus"><i class="fas fa-trash-alt"></i></button>
-                        </div>
-                    `
+                        </div>`
                 }
             ],
-            drawCallback: function() {
-                if (typeof feather !== 'undefined') feather.replace();
-            }
+            drawCallback: function() { if (typeof feather !== 'undefined') feather.replace(); }
+        });
+
+        // INISIALISASI TABEL EKSTERNAL
+        this.tableExt = $('#dataTableExt').DataTable({
+            data: dataEksternal,
+            responsive: true, scrollX: true, dom: dtDom, buttons: dtButtons,
+            columns: [
+                { data: null, className: 'text-center', render: (d, t, r, meta) => meta.row + 1 },
+                { data: 'Unit', render: data => `<span class="badge bg-warning text-dark">${data}</span>` },
+                { data: 'Nama Kegiatan', className: 'fw-bold text-dark' },
+                { data: 'Deskripsi Kegiatan', render: data => data ? `<div style="white-space: normal;">${data}</div>` : '-' }, // Mencegah teks terpotong
+                { data: 'Tanggal Mulai', render: data => data ? new Date(data).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-' },
+                { data: 'Tanggal Selesai', render: data => data ? new Date(data).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-' },
+                { data: 'PIC' },
+                { 
+                    data: 'ID (UUID)', className: 'text-center', 
+                    render: id => `
+                        <div class="d-flex justify-content-center gap-2">
+                            <button class="btn btn-sm btn-primary btn-icon" onclick="app.editEvent('${id}')" title="Edit"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-sm btn-danger btn-icon" onclick="app.deleteEvent('${id}')" title="Hapus"><i class="fas fa-trash-alt"></i></button>
+                        </div>`
+                }
+            ],
+            drawCallback: function() { if (typeof feather !== 'undefined') feather.replace(); }
         });
     },
+
+
 
     initCalendar: function() {
         const calElement = document.getElementById('calendar');

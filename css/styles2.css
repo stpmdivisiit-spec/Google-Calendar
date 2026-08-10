@@ -22,3 +22,35 @@
 .heatmap-low { background-color: #c6e7ff; color: #004085; }
 .heatmap-medium { background-color: #70b8ff; color: #ffffff; }
 .heatmap-high { background-color: #0d6efd; color: #ffffff; }
+
+
+/* --- TEMA UNGU UNTUK TOMBOL DATATABLES & FILTER --- */
+.dt-buttons .btn-purple {
+    background-color: #6f42c1 !important;
+    border-color: #6f42c1 !important;
+    color: #ffffff !important;
+    font-weight: 600;
+    font-size: 0.875rem;
+    padding: 0.4rem 1rem;
+    border-radius: 4px;
+    margin-right: 0.5rem;
+    transition: all 0.2s ease;
+}
+.dt-buttons .btn-purple:hover {
+    background-color: #59339d !important;
+    border-color: #59339d !important;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.btn-reset-purple {
+    background-color: #6f42c1 !important;
+    border-color: #6f42c1 !important;
+    color: #ffffff !important;
+}
+.btn-reset-purple:hover {
+    background-color: #59339d !important;
+    color: #ffffff !important;
+}
+.text-purple {
+    color: #6f42c1 !important;
+}
