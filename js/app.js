@@ -502,31 +502,29 @@ const app = {
         });
     },
 
-
-
-
-
-
-
-/* ==================================================
-       SISTEM IMPORT CSV (KHUSUS INTERNAL)
-       ================================================== */
     handleCsvUpload: function(file) {
-        if (typeof Papa === 'undefined') return this.toast('Library CSV belum termuat.', 'error');
-        
+        if (typeof Papa === 'undefined') {
+            this.toast('Library CSV belum termuat sempurna.', 'error');
+            return;
+        }
+
         Papa.parse(file, {
-            header: true, skipEmptyLines: true,
+            header: true,
+            skipEmptyLines: true,
             complete: async (results) => {
                 const data = results.data;
-                if (data.length === 0) return this.toast('File CSV kosong', 'warning');
+                if (data.length === 0) {
+                    this.toast('File CSV kosong', 'warning');
+                    return;
+                }
 
-                // Hanya cek 5 kolom ini. Tidak peduli dengan tipe atau deskripsi.
-                const fileHeaders = Object.keys(data[0]).map(h => h.trim());
-                const requiredHeaders = ['Unit', 'Nama Kegiatan', 'Tanggal Mulai', 'Tanggal Selesai', 'PIC'];
+                const requiredHeaders = ['Tipe Kegiatan', 'Unit', 'Nama Kegiatan', 'Tanggal Mulai', 'Tanggal Selesai', 'PIC'];
+                const fileHeaders = Object.keys(data[0]);
                 const isValid = requiredHeaders.every(h => fileHeaders.includes(h));
 
                 if (!isValid) {
-                    return Swal.fire('Format Salah', `Pastikan header CSV persis memiliki 5 kolom ini: <br><b>${requiredHeaders.join(', ')}</b>`, 'error');
+                    Swal.fire('Format Salah', 'Pastikan header CSV memiliki kolom: Tipe Kegiatan, Unit, Nama Kegiatan, Tanggal Mulai, Tanggal Selesai, PIC', 'error');
+                    return;
                 }
                 this.processBulkImport(data);
             },
@@ -535,29 +533,29 @@ const app = {
     },
 
     processBulkImport: async function(dataList) {
-        const total = dataList.length; let successCount = 0; let errorCount = 0;
+        const total = dataList.length;
+        let successCount = 0; let errorCount = 0;
 
         Swal.fire({
-            title: 'Mengimpor Kegiatan Internal...',
-            html: `<div class="mb-3">Menyinkronkan dengan Google Calendar...</div>
-                   <div class="progress" style="height: 25px;"><div id="import-progress" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" style="width: 0%; font-weight: bold;">0%</div></div>
-                   <div class="mt-2 small text-muted" id="import-status">Memproses 0 dari ${total}</div>`,
+            title: 'Mengimpor Data...',
+            html: `
+                <div class="mb-3">Menyinkronkan dengan Google Calendar...</div>
+                <div class="progress" style="height: 25px;">
+                    <div id="import-progress" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 0%; font-weight: bold;">0%</div>
+                </div>
+                <div class="mt-2 small text-muted" id="import-status">Memproses 0 dari ${total}</div>
+            `,
             allowOutsideClick: false, allowEscapeKey: false, showConfirmButton: false
         });
 
         for (let i = 0; i < total; i++) {
             const row = dataList[i];
-            
-            // PAKSA SEMUA DATA CSV MASUK SEBAGAI INTERNAL
             const payload = {
                 id: "", 
-                tipe: 'Internal', 
-                deskripsi: '-',
-                unit: row['Unit'], 
-                nama_kegiatan: row['Nama Kegiatan'],
-                tanggal_mulai: row['Tanggal Mulai'], 
-                tanggal_selesai: row['Tanggal Selesai'], 
-                pic: row['PIC']
+                tipe: row['Tipe Kegiatan'] === 'Eksternal' ? 'Eksternal' : 'Internal',
+                deskripsi: row['Deskripsi'] || '',
+                unit: row['Unit'], nama_kegiatan: row['Nama Kegiatan'],
+                tanggal_mulai: row['Tanggal Mulai'], tanggal_selesai: row['Tanggal Selesai'], pic: row['PIC']
             };
 
             try {
@@ -573,62 +571,11 @@ const app = {
 
         Swal.fire({
             title: 'Impor Selesai!',
-            html: `Jadwal Internal ditambahkan: <b>${successCount}</b><br>Gagal / Duplikat: <b>${errorCount}</b>`,
-            icon: errorCount > 0 ? 'warning' : 'success', confirmButtonText: 'Selesai'
+            html: `Berhasil ditambahkan: <b>${successCount}</b><br>Gagal / Duplikat: <b>${errorCount}</b>`,
+            icon: errorCount > 0 ? 'warning' : 'success',
+            confirmButtonText: 'Selesai'
         }).then(() => { this.loadData().then(() => this.refreshUI()); });
     },
-
-    /* ==================================================
-       SISTEM RESET TOTAL (SAPU JAGAT)
-       ================================================== */
-    resetSemuaData: function() {
-        Swal.fire({
-            title: '⚠️ BAHAYA: RESET TOTAL SISTEM?',
-            html: 'Tindakan ini akan <b>MENGHAPUS SELURUH KEGIATAN</b> di Spreadsheet (Internal & Eksternal) dan <b>MENGOSONGKAN GOOGLE CALENDAR</b>.<br><br>Gunakan ini hanya untuk pergantian tahun akademik atau membersihkan kesalahan data massal.<br><br><b>Tindakan ini tidak bisa dibatalkan!</b>',
-            icon: 'error',
-            showCancelButton: true,
-            confirmButtonColor: '#dc3545',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: '<i class="fas fa-trash-alt me-1"></i> Ya, Hapus Semua!',
-            cancelButtonText: 'Batal',
-            reverseButtons: true
-        }).then(async (result) => {
-            if (result.isConfirmed) {
-                Swal.fire({
-                    title: 'Sedang Mereset...',
-                    html: 'Menghapus data di Google Sheets & Google Calendar. Harap tunggu, ini mungkin memakan waktu beberapa detik...',
-                    allowOutsideClick: false,
-                    didOpen: () => { Swal.showLoading(); }
-                });
-
-                try {
-                    const response = await fetch(GAS_WEB_APP_URL, {
-                        method: 'POST',
-                        body: JSON.stringify({ action: 'reset' })
-                    });
-                    const res = await response.json();
-                    
-                    if (res.status === 'success') {
-                        Swal.fire('Sistem Bersih!', 'Semua data dan kalender telah berhasil dikosongkan.', 'success');
-                        await this.loadData();
-                        this.refreshUI();
-                    } else {
-                        throw new Error(res.message);
-                    }
-                } catch (e) {
-                    Swal.fire('Gagal Reset', 'Terjadi kesalahan saat menghubungi server.', 'error');
-                }
-            }
-        });
-    },
-
-
-
-
-
-
-
-
 
     toast: function(message, icon) {
         Swal.fire({ title: message, icon: icon, toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
