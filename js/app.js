@@ -370,8 +370,8 @@ const app = {
         .then(res => res.json()).then(() => { this.toast('Waktu ditarik', 'info'); this.loadData().then(() => this.refreshUI()); });
     },
 
-    /* ==================================================
-       SISTEM IMPORT CSV (KONVERSI AUTOMATIS DD/MM/YYYY)
+   /* ==================================================
+       SISTEM IMPORT CSV (KONVERSI AUTOMATIS & ANTI RATE LIMIT)
        ================================================== */
     handleCsvUpload: function(file) {
         if (typeof Papa === 'undefined') return this.toast('Library CSV belum termuat.', 'error');
@@ -380,6 +380,7 @@ const app = {
             header: true, 
             skipEmptyLines: true,
             transformHeader: function(h) {
+                // Sangat Penting: Menghapus Byte Order Mark (BOM) & Spasi
                 return h.replace(/^\uFEFF/, '').trim();
             },
             complete: async (results) => {
@@ -404,7 +405,7 @@ const app = {
 
         Swal.fire({
             title: 'Mengimpor Kegiatan Internal...',
-            html: `<div class="mb-3">Menyinkronkan dengan Google Calendar...</div>
+            html: `<div class="mb-3 text-warning fw-bold"><i class="fas fa-info-circle me-1"></i> Jangan tutup browser selama proses ini!</div>
                    <div class="progress" style="height: 25px;"><div id="import-progress" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" style="width: 0%; font-weight: bold;">0%</div></div>
                    <div class="mt-2 small text-muted" id="import-status">Memproses 0 dari ${total}</div>`,
             allowOutsideClick: false, allowEscapeKey: false, showConfirmButton: false
@@ -413,7 +414,6 @@ const app = {
         for (let i = 0; i < total; i++) {
             const row = dataList[i];
             
-            // NORMALISASI TANGGAL DARI DD/MM/YYYY KE YYYY-MM-DD
             const payload = {
                 id: "", 
                 tipe: 'Internal', 
@@ -434,11 +434,14 @@ const app = {
             const percent = Math.round(((i + 1) / total) * 100);
             $('#import-progress').css('width', percent + '%').text(percent + '%');
             $('#import-status').text(`Memproses ${i + 1} dari ${total}`);
+
+            // FITUR PENTING: JEDA 400ms AGAR SERVER GOOGLE CALENDAR TIDAK MEMBLOKIR (RATE LIMIT)
+            await sleep(400); 
         }
 
         Swal.fire({
             title: 'Impor Selesai!',
-            html: `Jadwal Internal ditambahkan: <b>${successCount}</b><br>Gagal: <b>${errorCount}</b>`,
+            html: `Jadwal Internal ditambahkan: <b class="text-success">${successCount}</b><br>Gagal / Duplikat: <b class="text-danger">${errorCount}</b>`,
             icon: errorCount > 0 ? 'warning' : 'success', confirmButtonText: 'Selesai'
         }).then(() => { this.loadData().then(() => this.refreshUI()); });
     },
@@ -454,7 +457,7 @@ const app = {
             confirmButtonText: '<i class="fas fa-trash-alt me-1"></i> Ya, Hapus Semua!', cancelButtonText: 'Batal', reverseButtons: true
         }).then(async (result) => {
             if (result.isConfirmed) {
-                Swal.fire({ title: 'Sedang Mereset...', html: 'Menghapus data. Harap tunggu...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+                Swal.fire({ title: 'Sedang Mereset...', html: 'Menghapus data di Google Calendar dan Sheets. Harap tunggu...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
                 try {
                     const res = await (await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: 'reset' }) })).json();
                     if (res.status === 'success') { Swal.fire('Sistem Bersih!', 'Semua data dikosongkan.', 'success'); await this.loadData(); this.refreshUI(); } 
