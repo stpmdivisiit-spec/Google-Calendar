@@ -219,13 +219,11 @@
     </div>
 
     <!-- Row 2: Heatmap Beban Puncak -->
-<!-- Row 2: Heatmap Beban Puncak -->
     <div class="row g-3 mb-4">
-        <div class="col-12">
+        <div class="col-xl-6">
             <div class="card shadow-sm border-0">
-                <!-- PERBAIKAN: flex-column flex-md-row agar teks tidak menabrak saat layar sempit -->
-                <div class="card-header bg-transparent fw-bold text-primary border-bottom d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center py-3">
-                    <span class="mb-1 mb-md-0"><i class="fas fa-th me-2"></i> Peak Workload Heatmap</span>
+                <div class="card-header bg-transparent fw-bold text-primary border-bottom d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-th me-2"></i> Peak Workload Heatmap (Matriks Kepadatan Kegiatan)</span>
                     <small class="text-muted fw-normal">Daftar Hari & Bulan dengan Intensitas Tertinggi</small>
                 </div>
                 <div class="card-body">
@@ -240,6 +238,74 @@
                         <span class="heatmap-legend" style="background:#0d6efd; width:14px; height:14px; border-radius:3px;"></span>
                         <span>Tinggi</span>
                     </div>
+                </div>
+            </div>
+        </div>
+        <!-- Row 3: Trend & Proporsi Unit -->
+        <div class="col-xl-6">
+            <div class="card shadow-sm h-100 border-0">
+                <div class="card-header bg-transparent fw-bold text-primary border-bottom">Trend Kegiatan Tahunan</div>
+                <div class="card-body">
+                    <div style="position: relative; height: 300px; width: 100%;">
+                        <canvas id="barChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-6">
+            <div class="card shadow-sm h-100 border-0">
+                <div class="card-header bg-transparent fw-bold text-primary border-bottom">Proporsi Kegiatan per Unit</div>
+                <div class="card-body d-flex justify-content-center align-items-center">
+                    <div style="position: relative; height: 300px; width: 100%;">
+                        <canvas id="doughnutChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Row 4: Analitik Lanjutan (Hari Kerja & Durasi Rata-Rata) -->
+        <div class="col-xl-6">
+            <div class="card shadow-sm h-100 border-0">
+                <div class="card-header bg-transparent fw-bold text-primary border-bottom">
+                    Distribusi Hari Kerja (Weekday vs Weekend)
+                </div>
+                <div class="card-body">
+                    <div style="position: relative; height: 300px; width: 100%;">
+                        <canvas id="dayOfWeekChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-6">
+            <div class="card shadow-sm h-100 border-0">
+                <div class="card-header bg-transparent fw-bold text-primary border-bottom">
+                    Rata-rata Durasi Kegiatan per Unit (Hari)
+                </div>
+                <div class="card-body">
+                    <div style="position: relative; height: 300px; width: 100%;">
+                        <canvas id="avgDurationChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Row 5: PIC Workload & Conflict Log -->
+        <div class="col-xl-6">
+            <div class="card shadow-sm h-100 border-0">
+                <div class="card-header bg-transparent fw-bold text-primary border-bottom">Beban Kerja PIC (Keseluruhan)</div>
+                <div class="card-body">
+                    <div style="position: relative; height: 300px; width: 100%;">
+                        <canvas id="picBarChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-6">
+            <div class="card shadow-sm h-100 border-0 border-start border-4 border-danger">
+                <div class="card-header bg-transparent fw-bold text-danger border-bottom d-flex justify-content-between align-items-center">
+                    <span>Log Tabrakan Jadwal</span>
+                    <span class="badge bg-danger rounded-pill" id="badge-conflict-count">0</span>
+                </div>
+                <div class="card-body p-0" style="max-height: 330px; overflow-y: auto;">
+                    <div class="list-group list-group-flush" id="conflict-list"></div>
                 </div>
             </div>
         </div>
@@ -401,76 +467,7 @@
     </div>
 
 </div>
-<!-- MODAL VIEW DETAIL MATRIKS -->
-<div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-light border-bottom-0">
-                <h5 class="modal-title fw-bolder text-primary">
-                    <i class="fas fa-file-alt me-2"></i> Detail Program Kerja
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body bg-light pt-0">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-body p-4">
-                        <div class="mb-4 text-center">
-                            <span class="badge bg-primary mb-2" id="detTipe"></span>
-                            <h4 class="fw-bold mb-1" id="detProgram"></h4>
-                            <div class="text-muted small"><i class="fas fa-building me-1"></i> <span id="detUnit"></span></div>
-                        </div>
-                        
-                        <div class="row g-4">
-                            <div class="col-md-6">
-                                <div class="text-muted small fw-bold text-uppercase mb-1">Waktu & Tempat</div>
-                                <div><i class="far fa-clock text-primary me-2"></i> <span id="detWaktu"></span></div>
-                                <div class="mt-1"><i class="fas fa-map-marker-alt text-danger me-2"></i> <span id="detTempat"></span></div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="text-muted small fw-bold text-uppercase mb-1">Pelaksana & Target</div>
-                                <div><i class="fas fa-user-tie text-success me-2"></i> <span id="detPic"></span></div>
-                                <div class="mt-1"><i class="fas fa-bullseye text-warning me-2"></i> <span id="detTarget"></span></div>
-                            </div>
-                            
-                            <div class="col-12"><hr class="my-0"></div>
 
-                            <div class="col-md-6">
-                                <div class="text-muted small fw-bold text-uppercase mb-1">Aspek</div>
-                                <div id="detAspek" class="fw-medium"></div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="text-muted small fw-bold text-uppercase mb-1">Anggaran</div>
-                                <div id="detAnggaran" class="fw-medium text-success"></div>
-                            </div>
-
-                            <div class="col-12">
-                                <div class="text-muted small fw-bold text-uppercase mb-1">Tujuan</div>
-                                <div id="detTujuan" class="bg-light p-3 rounded border"></div>
-                            </div>
-                            
-                            <div class="col-12">
-                                <div class="text-muted small fw-bold text-uppercase mb-1">Detail Kegiatan</div>
-                                <div id="detDetail" class="bg-light p-3 rounded border" style="white-space: pre-line;"></div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <div class="text-muted small fw-bold text-uppercase mb-1">Output (Luaran)</div>
-                                <div id="detOutput" class="bg-light p-3 rounded border h-100"></div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="text-muted small fw-bold text-uppercase mb-1">Dampak (Outcome)</div>
-                                <div id="detDampak" class="bg-light p-3 rounded border h-100"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer border-top-0 bg-light">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-            </div>
-        </div>
-    </div>
-</div>
 
 
 
@@ -517,20 +514,21 @@
 
 
 <form id="kegiatanForm">
-    <div class="modal-body pb-0" style="max-height: 70vh; overflow-y: auto;">
+    <div class="modal-body pb-0">
         <input type="hidden" id="event_id">
-        
-        <h6 class="fw-bold text-primary border-bottom pb-2 mb-3">1. Informasi Dasar</h6>
-        <div class="row g-3 mb-4">
-            <div class="col-md-6">
-                <label class="form-label fw-bold">Jenis Kegiatan</label>
+        <div class="row g-3">
+            <!-- TIPE KEGIATAN -->
+            <div class="col-md-12">
+                <label class="form-label fw-bold text-primary">Jenis Kegiatan</label>
                 <select class="form-select border-primary" id="tipe_kegiatan" required>
-                    <option value="Internal">Internal STPM Santa Ursula</option>
-                    <option value="Eksternal">Eksternal (Luar Kampus)</option>
+                    <option value="Internal">Kegiatan Internal STPM Santa Ursula</option>
+                    <option value="Eksternal">Kegiatan Eksternal (Undangan/Instansi Luar)</option>
                 </select>
             </div>
-            <div class="col-md-6">
-                <label class="form-label">Unit Kerja / Instansi</label>
+            
+            <!-- UNIT KERJA / INSTANSI -->
+            <div class="col-md-12">
+                <label class="form-label">Unit Kerja / Instansi Penyelenggara</label>
                 <select class="form-select select2" id="unit" required>
                     <option value="">Pilih Unit...</option>
                     <option value="Akademik dan Kerja Sama">Akademik dan Kerja Sama</option>
@@ -547,43 +545,31 @@
                     <option value="Instansi Eksternal (Luar Kampus)">Instansi Eksternal (Luar Kampus)</option>
                 </select>
             </div>
-            <div class="col-md-4">
-                <label class="form-label">Aspek</label>
-                <input type="text" class="form-control" id="aspek" placeholder="Contoh: Pedoman Akademik">
-            </div>
-            <div class="col-md-8">
-                <label class="form-label fw-bold">Program Kerja / Nama Kegiatan</label>
-                <input type="text" class="form-control border-primary" id="program_kerja" required placeholder="Contoh: Penyusunan Pedoman Skripsi">
-            </div>
+            
+            <!-- NAMA KEGIATAN -->
             <div class="col-md-12">
-                <label class="form-label">Tujuan</label>
-                <textarea class="form-control" id="tujuan" rows="2" placeholder="Tujuan program..."></textarea>
+                <label class="form-label">Nama Kegiatan</label>
+                <input type="text" class="form-control" id="nama_kegiatan" required placeholder="Contoh: Rapat Koordinasi">
             </div>
-        </div>
+            
+            <!-- DESKRIPSI (HANYA MUNCUL JIKA EKSTERNAL) -->
+            <div class="col-md-12 d-none" id="wrap_deskripsi">
+                <label class="form-label">Deskripsi Kegiatan Eksternal</label>
+                <textarea class="form-control" id="deskripsi" rows="3" placeholder="Contoh: Menghadiri undangan jalan sehat Hari Pancasila dari Pemda Kabupaten Ende..."></textarea>
+            </div>
 
-        <h6 class="fw-bold text-primary border-bottom pb-2 mb-3">2. Rincian Eksekusi</h6>
-        <div class="row g-3 mb-4">
+            <!-- TANGGAL -->
+            <div class="col-md-6">
+                <label class="form-label">Tanggal Mulai</label>
+                <input type="text" class="form-control flatpickr-date" id="tanggal_mulai" required placeholder="YYYY-MM-DD">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Tanggal Selesai</label>
+                <input type="text" class="form-control flatpickr-date" id="tanggal_selesai" required placeholder="YYYY-MM-DD">
+            </div>
+
+            <!-- PIC / DELEGASI -->
             <div class="col-md-12">
-                <label class="form-label">Detail Kegiatan</label>
-                <textarea class="form-control" id="detail_kegiatan" rows="3" placeholder="1. Peninjauan...&#10;2. Penyusunan draf..."></textarea>
-            </div>
-            <div class="col-md-12">
-                <label class="form-label">Waktu Naratif (Untuk Laporan Cetak)</label>
-                <input type="text" class="form-control" id="waktu_teks" placeholder="Contoh: September - November 2026">
-            </div>
-            <div class="col-md-6">
-                <label class="form-label text-danger fw-bold">Tanggal Mulai (Sistem Kalender)</label>
-                <input type="text" class="form-control flatpickr-date border-danger" id="tanggal_mulai" required placeholder="YYYY-MM-DD">
-            </div>
-            <div class="col-md-6">
-                <label class="form-label text-danger fw-bold">Tanggal Selesai (Sistem Kalender)</label>
-                <input type="text" class="form-control flatpickr-date border-danger" id="tanggal_selesai" required placeholder="YYYY-MM-DD">
-            </div>
-            <div class="col-md-6">
-                <label class="form-label">Tempat</label>
-                <input type="text" class="form-control" id="tempat" placeholder="Contoh: Aula STPM">
-            </div>
-            <div class="col-md-6">
                 <label class="form-label">PIC / Delegasi</label>
                 <select class="form-select select2" id="pic" required>
                     <option value="">Pilih Penanggung Jawab...</option>
@@ -615,31 +601,11 @@
                     <option value="Aloysius Kanisius Goo, S.I.Pust">Aloysius Kanisius Goo, S.I.Pust</option>
                 </select>
             </div>
-            <div class="col-md-6">
-                <label class="form-label">Target / Sasaran</label>
-                <input type="text" class="form-control" id="target_sasaran" placeholder="Contoh: Dosen & Mahasiswa">
-            </div>
-            <div class="col-md-6">
-                <label class="form-label">Anggaran</label>
-                <input type="text" class="form-control" id="anggaran" placeholder="Contoh: Rp 10.000.000">
-            </div>
-        </div>
-
-        <h6 class="fw-bold text-primary border-bottom pb-2 mb-3">3. Luaran & Dampak</h6>
-        <div class="row g-3">
-            <div class="col-md-6">
-                <label class="form-label">Output</label>
-                <textarea class="form-control" id="output" rows="2" placeholder="Luaran kegiatan..."></textarea>
-            </div>
-            <div class="col-md-6">
-                <label class="form-label">Dampak (Outcome)</label>
-                <textarea class="form-control" id="dampak" rows="2" placeholder="Dampak yang diharapkan..."></textarea>
-            </div>
         </div>
     </div>
     <div class="modal-footer border-top-0 pt-4">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-        <button type="submit" class="btn btn-primary px-4" id="btnSave">Simpan Program Kerja</button>
+        <button type="submit" class="btn btn-primary px-4" id="btnSave">Simpan Kegiatan</button>
     </div>
 </form>
 
