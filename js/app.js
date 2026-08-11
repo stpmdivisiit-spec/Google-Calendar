@@ -1,6 +1,6 @@
 /**
  * KONFIGURASI UTAMA - SIM KALENDER STPM SANTA URSULA
- * (VERSI SIMPLE DUAL-SHEET: Internal & Eksternal)
+ * (VERSI DUAL-SHEET: Internal CSV & Eksternal Manual)
  */
 const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxb_eQbMQtpR3sS6IZiMLqcIzOjtzB2RZ9CSIDr6Yn9UHdTUw4XIw-nwsOIpXK8xLYucg/exec'; 
 
@@ -13,7 +13,8 @@ const app = {
         this.setupTemplateInteractions();
         
         await this.loadData();
-        $('#app-loader').addClass('d-none'); $('#app-content').removeClass('d-none');
+        $('#app-loader').addClass('d-none'); 
+        $('#app-content').removeClass('d-none');
         
         this.initDataTables();
         this.initCalendar();
@@ -54,12 +55,20 @@ const app = {
     setupTemplateInteractions: function() {
         // Toggle Deskripsi untuk Eksternal
         $('#tipe_kegiatan').on('change', function() {
-            if ($(this).val() === 'Eksternal') { $('#wrap_deskripsi').removeClass('d-none'); } 
-            else { $('#wrap_deskripsi').addClass('d-none'); }
+            if ($(this).val() === 'Eksternal') { 
+                $('#wrap_deskripsi').removeClass('d-none'); 
+                $('#deskripsi').attr('required', true);
+            } else { 
+                $('#wrap_deskripsi').addClass('d-none'); 
+                $('#deskripsi').removeAttr('required').val('');
+            }
         });
 
         $('#sidebarToggle').on('click', e => { e.preventDefault(); $('body').toggleClass('sb-sidenav-toggled'); });
-        $('#themeToggle').on('click', function() { $('body').toggleClass('dark-mode'); $(this).html($('body').hasClass('dark-mode') ? '<i class="fas fa-sun"></i> Mode' : '<i class="fas fa-moon"></i> Mode'); });
+        $('#themeToggle').on('click', function() { 
+            $('body').toggleClass('dark-mode'); 
+            $(this).html($('body').hasClass('dark-mode') ? '<i class="fas fa-sun"></i> Mode' : '<i class="fas fa-moon"></i> Mode'); 
+        });
 
         // Navigasi Halaman SPA
         $('.menu-link').on('click', (e) => {
@@ -70,7 +79,10 @@ const app = {
             $('#page-title').text($(e.currentTarget).data('title') || $(e.currentTarget).text().trim());
             
             if (target === 'calendar-view' && this.calendar) setTimeout(() => this.calendar.render(), 100);
-            else if (target === 'table-view') setTimeout(() => { if (this.table) this.table.columns.adjust().responsive.recalc(); if (this.tableExt) this.tableExt.columns.adjust().responsive.recalc(); }, 100);
+            else if (target === 'table-view') setTimeout(() => { 
+                if (this.table) this.table.columns.adjust().responsive.recalc(); 
+                if (this.tableExt) this.tableExt.columns.adjust().responsive.recalc(); 
+            }, 100);
         });
 
         // Setup Filter Actions
@@ -90,7 +102,7 @@ const app = {
             const response = await fetch(GAS_WEB_APP_URL);
             const json = await response.json();
             this.eventsData = json.data || [];
-        } catch (error) { this.toast('Gagal memuat data.', 'error'); }
+        } catch (error) { this.toast('Gagal memuat data dari server.', 'error'); }
     },
 
     refreshUI: function() {
@@ -111,16 +123,21 @@ const app = {
     formatEventsForCalendar: function(data) {
         let validEvents = [];
         data.forEach(item => {
-            const start = new Date(item['Tanggal Mulai']); const end = new Date(item['Tanggal Selesai']);
+            const start = new Date(item['Tanggal Mulai']); 
+            const end = new Date(item['Tanggal Selesai']);
             if(!isNaN(start) && !isNaN(end)) {
                 end.setDate(end.getDate() + 1);
                 let isExt = item.Tipe === 'Eksternal';
                 validEvents.push({
-                    id: item['ID (UUID)'], title: (isExt ? '[EKSTERNAL] ' : '') + `[${item.Unit}] ${item['Nama Kegiatan']}`,
-                    start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0], allDay: true,
+                    id: item['ID (UUID)'], 
+                    title: (isExt ? '[EKSTERNAL] ' : '') + `[${item.Unit}] ${item['Nama Kegiatan']}`,
+                    start: start.toISOString().split('T')[0], 
+                    end: end.toISOString().split('T')[0], 
+                    allDay: true,
                     backgroundColor: isExt ? '#ffc107' : this.getUnitColorCode(item.Unit),
                     borderColor: isExt ? '#ffc107' : this.getUnitColorCode(item.Unit),
-                    textColor: isExt ? '#000000' : '#ffffff', extendedProps: item
+                    textColor: isExt ? '#000000' : '#ffffff', 
+                    extendedProps: item
                 });
             }
         });
@@ -141,7 +158,7 @@ const app = {
         if ($.fn.DataTable.isDataTable('#dataTable')) $('#dataTable').DataTable().destroy();
         if ($.fn.DataTable.isDataTable('#dataTableExt')) $('#dataTableExt').DataTable().destroy();
 
-        // INTERNAL TABLE
+        // TABEL INTERNAL
         this.table = $('#dataTable').DataTable({ 
             data: dInt, responsive: true, scrollX: true, dom: dtDom, buttons: getBtns(false),
             columns: [
@@ -160,7 +177,7 @@ const app = {
             ]
         });
 
-        // EKSTERNAL TABLE
+        // TABEL EKSTERNAL
         this.tableExt = $('#dataTableExt').DataTable({ 
             data: dExt, responsive: true, scrollX: true, dom: dtDom, buttons: getBtns(true),
             columns: [
@@ -203,6 +220,7 @@ const app = {
     viewDetail: function(id) {
         const item = this.eventsData.find(d => d['ID (UUID)'] === id);
         if (!item) return;
+        
         const isExt = item.Tipe === 'Eksternal';
         const tipeStr = isExt ? 'Eksternal / Luar Kampus' : 'Internal STPM';
         const tglMulai = new Date(item['Tanggal Mulai']).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -211,10 +229,10 @@ const app = {
         let htmlContent = `
             <table class="table table-sm table-bordered text-start mt-3">
                 <tr><th width="35%" class="bg-light">Tipe</th><td><span class="badge ${isExt ? 'bg-warning text-dark' : 'bg-primary'}">${tipeStr}</span></td></tr>
-                <tr><th class="bg-light">Unit / Instansi</th><td>${item.Unit}</td></tr>
-                <tr><th class="bg-light">Nama Kegiatan</th><td class="fw-bold">${item['Nama Kegiatan']}</td></tr>
+                <tr><th class="bg-light">Unit / Instansi</th><td>${item.Unit || '-'}</td></tr>
+                <tr><th class="bg-light">Nama Kegiatan</th><td class="fw-bold">${item['Nama Kegiatan'] || '-'}</td></tr>
                 <tr><th class="bg-light">Tanggal</th><td>${tglMulai} <br><small>s.d</small><br> ${tglSelesai}</td></tr>
-                <tr><th class="bg-light">PIC / Delegasi</th><td>${item.PIC}</td></tr>
+                <tr><th class="bg-light">PIC / Delegasi</th><td>${item.PIC || '-'}</td></tr>
         `;
         if (isExt) htmlContent += `<tr><th class="bg-light">Deskripsi</th><td>${item['Deskripsi Kegiatan'] || '-'}</td></tr>`;
         htmlContent += `</table>`;
@@ -251,12 +269,17 @@ const app = {
         };
 
         const action = payload.id ? 'update' : 'add';
-        const newStart = new Date(payload.tanggal_mulai).getTime(); const newEnd = new Date(payload.tanggal_selesai).getTime();
+        const btn = $('#btnSave');
+
+        const newStart = new Date(payload.tanggal_mulai).getTime(); 
+        const newEnd = new Date(payload.tanggal_selesai).getTime();
         let conflicts = [];
 
         this.eventsData.forEach(ev => {
             if (payload.id && ev['ID (UUID)'] === payload.id) return;
-            const eStart = new Date(ev['Tanggal Mulai']).getTime(); const eEnd = new Date(ev['Tanggal Selesai']).getTime();
+            const eStart = new Date(ev['Tanggal Mulai']).getTime(); 
+            const eEnd = new Date(ev['Tanggal Selesai']).getTime();
+            
             if (!isNaN(eStart) && !isNaN(eEnd) && !isNaN(newStart) && !isNaN(newEnd)) {
                 if (newStart <= eEnd && eStart <= newEnd) conflicts.push(`• <b>${ev['Nama Kegiatan']}</b> <span class="text-primary">(${ev.Unit})</span>`);
             }
@@ -267,8 +290,8 @@ const app = {
                 title: '⚠️ Tabrakan Jadwal',
                 html: `<div class="text-start mb-2">Berbenturan dengan kegiatan berikut:</div><div class="text-start bg-light p-2 rounded mb-3" style="max-height: 120px; overflow-y: auto; font-size: 0.9rem;">${conflicts.join('<br>')}</div><div class="text-start">Apakah yakin tetap menyimpan?</div>`,
                 icon: 'warning', showCancelButton: true, confirmButtonColor: '#0d6efd', cancelButtonColor: '#6c757d', confirmButtonText: 'Ya, Simpan'
-            }).then(r => { if (r.isConfirmed) this.executeSaveToServer(action, payload, $('#btnSave')); });
-        } else this.executeSaveToServer(action, payload, $('#btnSave'));
+            }).then(r => { if (r.isConfirmed) this.executeSaveToServer(action, payload, btn); });
+        } else this.executeSaveToServer(action, payload, btn);
     },
 
     executeSaveToServer: async function(action, payload, btn) {
@@ -306,7 +329,7 @@ const app = {
     },
 
     /* ==================================================
-       SISTEM IMPORT CSV (KEBAL KARAKTER GAIB BOM & SPASI)
+       SISTEM IMPORT CSV (KEBAL BOM & HANYA UNTUK INTERNAL)
        ================================================== */
     handleCsvUpload: function(file) {
         if (typeof Papa === 'undefined') return this.toast('Library CSV belum termuat.', 'error');
@@ -315,7 +338,7 @@ const app = {
             header: true, 
             skipEmptyLines: true,
             transformHeader: function(h) {
-                // Hapus BOM (Byte Order Mark) bawaan Excel & spasi pinggir
+                // Sangat Penting: Menghapus Byte Order Mark (BOM) & Spasi
                 return h.replace(/^\uFEFF/, '').trim();
             },
             complete: async (results) => {
@@ -340,7 +363,7 @@ const app = {
 
         Swal.fire({
             title: 'Mengimpor Kegiatan Internal...',
-            html: `<div class="mb-3">Menyinkronkan dengan Google Calendar...</div>
+            html: `<div class="mb-3">Menyinkronkan dengan Database & Google Calendar...</div>
                    <div class="progress" style="height: 25px;"><div id="import-progress" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" style="width: 0%; font-weight: bold;">0%</div></div>
                    <div class="mt-2 small text-muted" id="import-status">Memproses 0 dari ${total}</div>`,
             allowOutsideClick: false, allowEscapeKey: false, showConfirmButton: false
@@ -349,7 +372,7 @@ const app = {
         for (let i = 0; i < total; i++) {
             const row = dataList[i];
             
-            // PAKSA SEMUA DATA CSV MASUK SEBAGAI INTERNAL
+            // PAKSA SEMUA DATA CSV MASUK SEBAGAI INTERNAL (Sesuai Permintaan Pimpinan)
             const payload = {
                 id: "", 
                 tipe: 'Internal', 
