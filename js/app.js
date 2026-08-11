@@ -1,8 +1,33 @@
 /**
  * KONFIGURASI UTAMA - SIM KALENDER STPM SANTA URSULA
- * (VERSI DUAL-SHEET: Internal CSV & Eksternal Manual)
+ * (VERSI DUAL-SHEET DENGAN NORMALISASI TANGGAL AUTOMATIS)
  */
 const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxb_eQbMQtpR3sS6IZiMLqcIzOjtzB2RZ9CSIDr6Yn9UHdTUw4XIw-nwsOIpXK8xLYucg/exec'; 
+
+// HELPER: Konversi DD/MM/YYYY atau YYYY-MM-DD menjadi ISO Format (YYYY-MM-DD)
+function parseToISODate(dateStr) {
+    if (!dateStr) return '';
+    dateStr = String(dateStr).trim();
+    
+    // Format YYYY-MM-DD atau YYYY/MM/DD
+    if (/^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(dateStr)) {
+        const parts = dateStr.split(/[-/]/);
+        return `${parts[0]}-${String(parts[1]).padStart(2, '0')}-${String(parts[2]).padStart(2, '0')}`;
+    }
+    
+    // Format DD/MM/YYYY atau DD-MM-YYYY (Sesuai Excel Indonesia)
+    if (/^\d{1,2}[-/]\d{1,2}[-/]\d{4}$/.test(dateStr)) {
+        const parts = dateStr.split(/[-/]/);
+        return `${parts[2]}-${String(parts[1]).padStart(2, '0')}-${String(parts[0]).padStart(2, '0')}`;
+    }
+    
+    // Fallback jika berupa Date String standar
+    const dt = new Date(dateStr);
+    if (!isNaN(dt.getTime())) {
+        return dt.toISOString().split('T')[0];
+    }
+    return '';
+}
 
 const app = {
     eventsData: [], table: null, tableExt: null, calendar: null,
@@ -53,7 +78,6 @@ const app = {
     },
 
     setupTemplateInteractions: function() {
-        // Toggle Deskripsi untuk Eksternal
         $('#tipe_kegiatan').on('change', function() {
             if ($(this).val() === 'Eksternal') { 
                 $('#wrap_deskripsi').removeClass('d-none'); 
@@ -70,7 +94,6 @@ const app = {
             $(this).html($('body').hasClass('dark-mode') ? '<i class="fas fa-sun"></i> Mode' : '<i class="fas fa-moon"></i> Mode'); 
         });
 
-        // Navigasi Halaman SPA
         $('.menu-link').on('click', (e) => {
             e.preventDefault();
             $('.menu-link').removeClass('active'); $(e.currentTarget).addClass('active');
@@ -85,7 +108,6 @@ const app = {
             }, 100);
         });
 
-        // Setup Filter Actions
         const setupFilter = (unitId, dateId, tableObj, resetId) => {
             $(`#${unitId}, #${dateId}`).on('change', () => { if (tableObj) tableObj.draw(); });
             $(`#${resetId}`).on('click', () => { $(`#${unitId}`).val('').trigger('change'); document.querySelector(`#${dateId}`)._flatpickr.clear(); if (tableObj) tableObj.draw(); });
@@ -123,15 +145,19 @@ const app = {
     formatEventsForCalendar: function(data) {
         let validEvents = [];
         data.forEach(item => {
-            const start = new Date(item['Tanggal Mulai']); 
-            const end = new Date(item['Tanggal Selesai']);
+            const startStr = parseToISODate(item['Tanggal Mulai']);
+            const endStr = parseToISODate(item['Tanggal Selesai']);
+            
+            const start = new Date(startStr); 
+            const end = new Date(endStr);
+            
             if(!isNaN(start) && !isNaN(end)) {
                 end.setDate(end.getDate() + 1);
                 let isExt = item.Tipe === 'Eksternal';
                 validEvents.push({
                     id: item['ID (UUID)'], 
                     title: (isExt ? '[EKSTERNAL] ' : '') + `[${item.Unit}] ${item['Nama Kegiatan']}`,
-                    start: start.toISOString().split('T')[0], 
+                    start: startStr, 
                     end: end.toISOString().split('T')[0], 
                     allDay: true,
                     backgroundColor: isExt ? '#ffc107' : this.getUnitColorCode(item.Unit),
@@ -165,8 +191,14 @@ const app = {
                 { data: null, className: 'text-center', defaultContent: '', render: (d, t, r, m) => m.row + 1 },
                 { data: 'Unit', defaultContent: '-' },
                 { data: 'Nama Kegiatan', className: 'fw-bold text-dark', defaultContent: '-' },
-                { data: 'Tanggal Mulai', defaultContent: '-', render: d => d ? new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-' },
-                { data: 'Tanggal Selesai', defaultContent: '-', render: d => d ? new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-' },
+                { data: 'Tanggal Mulai', defaultContent: '-', render: d => {
+                    const iso = parseToISODate(d);
+                    return iso ? new Date(iso).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+                }},
+                { data: 'Tanggal Selesai', defaultContent: '-', render: d => {
+                    const iso = parseToISODate(d);
+                    return iso ? new Date(iso).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+                }},
                 { data: 'PIC', defaultContent: '-' },
                 { data: 'ID (UUID)', className: 'text-center', defaultContent: '',
                   render: id => `<div class="d-flex justify-content-center gap-2">
@@ -185,8 +217,14 @@ const app = {
                 { data: 'Unit', defaultContent: '-', render: d => `<span class="badge bg-warning text-dark">${d}</span>` },
                 { data: 'Nama Kegiatan', className: 'fw-bold text-dark', defaultContent: '-' },
                 { data: 'Deskripsi Kegiatan', defaultContent: '-', render: d => d ? `<div style="white-space: normal; min-width: 200px;">${d}</div>` : '-' },
-                { data: 'Tanggal Mulai', defaultContent: '-', render: d => d ? new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-' },
-                { data: 'Tanggal Selesai', defaultContent: '-', render: d => d ? new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-' },
+                { data: 'Tanggal Mulai', defaultContent: '-', render: d => {
+                    const iso = parseToISODate(d);
+                    return iso ? new Date(iso).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+                }},
+                { data: 'Tanggal Selesai', defaultContent: '-', render: d => {
+                    const iso = parseToISODate(d);
+                    return iso ? new Date(iso).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+                }},
                 { data: 'PIC', defaultContent: '-' },
                 { data: 'ID (UUID)', className: 'text-center', defaultContent: '',
                   render: id => `<div class="d-flex justify-content-center gap-2">
@@ -220,11 +258,13 @@ const app = {
     viewDetail: function(id) {
         const item = this.eventsData.find(d => d['ID (UUID)'] === id);
         if (!item) return;
-        
         const isExt = item.Tipe === 'Eksternal';
         const tipeStr = isExt ? 'Eksternal / Luar Kampus' : 'Internal STPM';
-        const tglMulai = new Date(item['Tanggal Mulai']).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-        const tglSelesai = new Date(item['Tanggal Selesai']).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+        
+        const isoMulai = parseToISODate(item['Tanggal Mulai']);
+        const isoSelesai = parseToISODate(item['Tanggal Selesai']);
+        const tglMulai = isoMulai ? new Date(isoMulai).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-';
+        const tglSelesai = isoSelesai ? new Date(isoSelesai).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-';
         
         let htmlContent = `
             <table class="table table-sm table-bordered text-start mt-3">
@@ -255,8 +295,8 @@ const app = {
         $('#nama_kegiatan').val(item['Nama Kegiatan']);
         $('#deskripsi').val(item['Deskripsi Kegiatan']); 
         
-        $('#tanggal_mulai').val(new Date(item['Tanggal Mulai']).toISOString().split('T')[0]);
-        $('#tanggal_selesai').val(new Date(item['Tanggal Selesai']).toISOString().split('T')[0]);
+        $('#tanggal_mulai').val(parseToISODate(item['Tanggal Mulai']));
+        $('#tanggal_selesai').val(parseToISODate(item['Tanggal Selesai']));
         $('#pic').val(item.PIC).trigger('change'); 
         $('#kegiatanModal').modal('show');
     },
@@ -265,7 +305,9 @@ const app = {
         const payload = {
             id: $('#event_id').val(), tipe: $('#tipe_kegiatan').val(), unit: $('#unit').val(), 
             nama_kegiatan: $('#nama_kegiatan').val(), deskripsi: $('#deskripsi').val() || '', 
-            tanggal_mulai: $('#tanggal_mulai').val(), tanggal_selesai: $('#tanggal_selesai').val(), pic: $('#pic').val()
+            tanggal_mulai: parseToISODate($('#tanggal_mulai').val()), 
+            tanggal_selesai: parseToISODate($('#tanggal_selesai').val()), 
+            pic: $('#pic').val()
         };
 
         const action = payload.id ? 'update' : 'add';
@@ -277,8 +319,8 @@ const app = {
 
         this.eventsData.forEach(ev => {
             if (payload.id && ev['ID (UUID)'] === payload.id) return;
-            const eStart = new Date(ev['Tanggal Mulai']).getTime(); 
-            const eEnd = new Date(ev['Tanggal Selesai']).getTime();
+            const eStart = new Date(parseToISODate(ev['Tanggal Mulai'])).getTime(); 
+            const eEnd = new Date(parseToISODate(ev['Tanggal Selesai'])).getTime();
             
             if (!isNaN(eStart) && !isNaN(eEnd) && !isNaN(newStart) && !isNaN(newEnd)) {
                 if (newStart <= eEnd && eStart <= newEnd) conflicts.push(`• <b>${ev['Nama Kegiatan']}</b> <span class="text-primary">(${ev.Unit})</span>`);
@@ -329,7 +371,7 @@ const app = {
     },
 
     /* ==================================================
-       SISTEM IMPORT CSV (KEBAL BOM & HANYA UNTUK INTERNAL)
+       SISTEM IMPORT CSV (KONVERSI AUTOMATIS DD/MM/YYYY)
        ================================================== */
     handleCsvUpload: function(file) {
         if (typeof Papa === 'undefined') return this.toast('Library CSV belum termuat.', 'error');
@@ -338,7 +380,6 @@ const app = {
             header: true, 
             skipEmptyLines: true,
             transformHeader: function(h) {
-                // Sangat Penting: Menghapus Byte Order Mark (BOM) & Spasi
                 return h.replace(/^\uFEFF/, '').trim();
             },
             complete: async (results) => {
@@ -363,7 +404,7 @@ const app = {
 
         Swal.fire({
             title: 'Mengimpor Kegiatan Internal...',
-            html: `<div class="mb-3">Menyinkronkan dengan Database & Google Calendar...</div>
+            html: `<div class="mb-3">Menyinkronkan dengan Google Calendar...</div>
                    <div class="progress" style="height: 25px;"><div id="import-progress" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" style="width: 0%; font-weight: bold;">0%</div></div>
                    <div class="mt-2 small text-muted" id="import-status">Memproses 0 dari ${total}</div>`,
             allowOutsideClick: false, allowEscapeKey: false, showConfirmButton: false
@@ -372,15 +413,15 @@ const app = {
         for (let i = 0; i < total; i++) {
             const row = dataList[i];
             
-            // PAKSA SEMUA DATA CSV MASUK SEBAGAI INTERNAL (Sesuai Permintaan Pimpinan)
+            // NORMALISASI TANGGAL DARI DD/MM/YYYY KE YYYY-MM-DD
             const payload = {
                 id: "", 
                 tipe: 'Internal', 
                 deskripsi: '-',
                 unit: row['Unit'], 
                 nama_kegiatan: row['Nama Kegiatan'],
-                tanggal_mulai: row['Tanggal Mulai'], 
-                tanggal_selesai: row['Tanggal Selesai'], 
+                tanggal_mulai: parseToISODate(row['Tanggal Mulai']), 
+                tanggal_selesai: parseToISODate(row['Tanggal Selesai']), 
                 pic: row['PIC']
             };
 
