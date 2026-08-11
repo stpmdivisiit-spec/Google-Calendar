@@ -1,14 +1,11 @@
 /**
- * KONFIGURASI UTAMA
- * URL Deployment Google Apps Script
+ * KONFIGURASI UTAMA - SIM KALENDER STPM SANTA URSULA
+ * (VERSI SIMPLE DUAL-SHEET: Internal & Eksternal)
  */
 const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxb_eQbMQtpR3sS6IZiMLqcIzOjtzB2RZ9CSIDr6Yn9UHdTUw4XIw-nwsOIpXK8xLYucg/exec'; 
 
 const app = {
-    eventsData: [],
-    table: null,
-    tableExt: null,
-    calendar: null,
+    eventsData: [], table: null, tableExt: null, calendar: null,
 
     init: async function() {
         this.setupPlugins();
@@ -16,156 +13,76 @@ const app = {
         this.setupTemplateInteractions();
         
         await this.loadData();
-        
-        $('#app-loader').addClass('d-none');
-        $('#app-content').removeClass('d-none');
+        $('#app-loader').addClass('d-none'); $('#app-content').removeClass('d-none');
         
         this.initDataTables();
         this.initCalendar();
-        DashboardAnalytics.init(this.eventsData);
+        if(typeof DashboardAnalytics !== 'undefined') DashboardAnalytics.init(this.eventsData);
     },
 
     setupPlugins: function() {
         $('.select2').select2({ theme: 'bootstrap-5', dropdownParent: $('#kegiatanModal') });
         $('.flatpickr-date').flatpickr({ enableTime: false, dateFormat: "Y-m-d" });
-
         $('.select2-filter').select2({ theme: 'bootstrap-5' });
-        $('.flatpickr-range').flatpickr({
-            mode: "range",          
-            dateFormat: "Y-m-d",
-            altInput: true,         
-            altFormat: "d M Y"
-        });
+        $('.flatpickr-range').flatpickr({ mode: "range", dateFormat: "Y-m-d", altInput: true, altFormat: "d M Y" });
     },
 
     setupDataTablesFilter: function() {
         $.fn.dataTable.ext.search.push((settings, data, dataIndex) => {
-            // Filter Tabel Internal
-            if (settings.nTable.id === 'dataTable' && this.table) {
-                const filterUnit = $('#filterUnit').val();
-                const filterDate = $('#filterDate').val(); 
-                const rowData = this.table.row(dataIndex).data(); 
-                if (!rowData) return true;
+            const isExt = settings.nTable.id === 'dataTableExt';
+            const currentTable = isExt ? this.tableExt : this.table;
+            if (!currentTable) return true;
 
-                const unitMatch = filterUnit === "" || rowData.Unit === filterUnit;
-                let dateMatch = true;
-                if (filterDate) {
-                    const eventStart = new Date(rowData['Tanggal Mulai']).setHours(0,0,0,0);
-                    if (filterDate.includes(' to ')) {
-                        const dates = filterDate.split(' to ');
-                        dateMatch = (eventStart >= new Date(dates[0]).setHours(0,0,0,0) && eventStart <= new Date(dates[1]).setHours(23,59,59,999));
-                    } else {
-                        dateMatch = (eventStart === new Date(filterDate).setHours(0,0,0,0));
-                    }
-                }
-                return unitMatch && dateMatch;
+            const filterUnit = $(isExt ? '#filterUnitExt' : '#filterUnit').val();
+            const filterDate = $(isExt ? '#filterDateExt' : '#filterDate').val(); 
+            const rowData = currentTable.row(dataIndex).data(); 
+            if (!rowData) return true;
+
+            const unitMatch = filterUnit === "" || rowData.Unit === filterUnit;
+            let dateMatch = true;
+            if (filterDate) {
+                const eventStart = new Date(rowData['Tanggal Mulai']).setHours(0,0,0,0);
+                if (filterDate.includes(' to ')) {
+                    const dates = filterDate.split(' to ');
+                    dateMatch = (eventStart >= new Date(dates[0]).setHours(0,0,0,0) && eventStart <= new Date(dates[1]).setHours(23,59,59,999));
+                } else dateMatch = (eventStart === new Date(filterDate).setHours(0,0,0,0));
             }
-
-            // Filter Tabel Eksternal
-            if (settings.nTable.id === 'dataTableExt' && this.tableExt) {
-                const filterUnit = $('#filterUnitExt').val();
-                const filterDate = $('#filterDateExt').val(); 
-                const rowData = this.tableExt.row(dataIndex).data(); 
-                if (!rowData) return true;
-
-                const unitMatch = filterUnit === "" || rowData.Unit === filterUnit;
-                let dateMatch = true;
-                if (filterDate) {
-                    const eventStart = new Date(rowData['Tanggal Mulai']).setHours(0,0,0,0);
-                    if (filterDate.includes(' to ')) {
-                        const dates = filterDate.split(' to ');
-                        dateMatch = (eventStart >= new Date(dates[0]).setHours(0,0,0,0) && eventStart <= new Date(dates[1]).setHours(23,59,59,999));
-                    } else {
-                        dateMatch = (eventStart === new Date(filterDate).setHours(0,0,0,0));
-                    }
-                }
-                return unitMatch && dateMatch;
-            }
-            return true;
+            return unitMatch && dateMatch;
         });
     },
 
     setupTemplateInteractions: function() {
-        // Tipe Kegiatan Toggle
+        // Toggle Deskripsi untuk Eksternal
         $('#tipe_kegiatan').on('change', function() {
-            if ($(this).val() === 'Eksternal') {
-                $('#wrap_deskripsi').removeClass('d-none');
-                $('#deskripsi').attr('required', true);
-            } else {
-                $('#wrap_deskripsi').addClass('d-none');
-                $('#deskripsi').removeAttr('required').val('');
-            }
+            if ($(this).val() === 'Eksternal') { $('#wrap_deskripsi').removeClass('d-none'); } 
+            else { $('#wrap_deskripsi').addClass('d-none'); }
         });
 
-        $('#sidebarToggle').on('click', function(e) {
-            e.preventDefault(); 
-            $('body').toggleClass('sb-sidenav-toggled');
-        });
+        $('#sidebarToggle').on('click', e => { e.preventDefault(); $('body').toggleClass('sb-sidenav-toggled'); });
+        $('#themeToggle').on('click', function() { $('body').toggleClass('dark-mode'); $(this).html($('body').hasClass('dark-mode') ? '<i class="fas fa-sun"></i> Mode' : '<i class="fas fa-moon"></i> Mode'); });
 
-        $('#themeToggle').on('click', function() {
-            $('body').toggleClass('dark-mode');
-            const isDark = $('body').hasClass('dark-mode');
-            $(this).html(isDark ? '<i class="fas fa-sun"></i> Mode' : '<i class="fas fa-moon"></i> Mode');
-        });
-
-        // Navigasi SPA
+        // Navigasi Halaman SPA
         $('.menu-link').on('click', (e) => {
             e.preventDefault();
-            const $this = $(e.currentTarget);
-
-            $('.menu-link').removeClass('active');
-            $this.addClass('active');
-            
+            $('.menu-link').removeClass('active'); $(e.currentTarget).addClass('active');
             $('.view-section').addClass('d-none');
-            const target = $this.data('target');
-            $(`#${target}`).removeClass('d-none');
+            const target = $(e.currentTarget).data('target'); $(`#${target}`).removeClass('d-none');
+            $('#page-title').text($(e.currentTarget).data('title') || $(e.currentTarget).text().trim());
             
-            const title = $this.data('title') || $this.text().trim();
-            const icon = $this.data('icon');
-            $('#page-title').text(title);
-            
-            if (icon) {
-                $('#header-icon').replaceWith(`<i id="header-icon" data-feather="${icon}"></i>`);
-                if (typeof feather !== 'undefined') feather.replace();
-            }
-
-            if (target === 'calendar-view' && this.calendar) {
-                setTimeout(() => { this.calendar.render(); }, 100);
-            } else if (target === 'table-view') {
-                setTimeout(() => { 
-                    if (this.table) this.table.columns.adjust().responsive.recalc(); 
-                    if (this.tableExt) this.tableExt.columns.adjust().responsive.recalc();
-                }, 100);
-            }
+            if (target === 'calendar-view' && this.calendar) setTimeout(() => this.calendar.render(), 100);
+            else if (target === 'table-view') setTimeout(() => { if (this.table) this.table.columns.adjust().responsive.recalc(); if (this.tableExt) this.tableExt.columns.adjust().responsive.recalc(); }, 100);
         });
 
-        // Filter Tabel Internal
-        $('#filterUnit, #filterDate').on('change', () => { if (this.table) this.table.draw(); });
-        $('#btnResetFilter').on('click', () => {
-            $('#filterUnit').val('').trigger('change');
-            document.querySelector('#filterDate')._flatpickr.clear();
-            if (this.table) this.table.draw();
-        });
+        // Setup Filter Actions
+        const setupFilter = (unitId, dateId, tableObj, resetId) => {
+            $(`#${unitId}, #${dateId}`).on('change', () => { if (tableObj) tableObj.draw(); });
+            $(`#${resetId}`).on('click', () => { $(`#${unitId}`).val('').trigger('change'); document.querySelector(`#${dateId}`)._flatpickr.clear(); if (tableObj) tableObj.draw(); });
+        };
+        setupFilter('filterUnit', 'filterDate', this.table, 'btnResetFilter');
+        setupFilter('filterUnitExt', 'filterDateExt', this.tableExt, 'btnResetFilterExt');
 
-        // Filter Tabel Eksternal
-        $('#filterUnitExt, #filterDateExt').on('change', () => { if (this.tableExt) this.tableExt.draw(); });
-        $('#btnResetFilterExt').on('click', () => {
-            $('#filterUnitExt').val('').trigger('change');
-            document.querySelector('#filterDateExt')._flatpickr.clear();
-            if (this.tableExt) this.tableExt.draw();
-        });
-
-        $('#fileCsv').on('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            this.handleCsvUpload(file);
-            $(e.target).val(''); 
-        });
-
-        $('#kegiatanForm').on('submit', (e) => {
-            e.preventDefault();
-            this.saveEvent();
-        });
+        $('#fileCsv').on('change', (e) => { const file = e.target.files[0]; if (!file) return; this.handleCsvUpload(file); $(e.target).val(''); });
+        $('#kegiatanForm').on('submit', (e) => { e.preventDefault(); this.saveEvent(); });
     },
 
     loadData: async function() {
@@ -173,342 +90,222 @@ const app = {
             const response = await fetch(GAS_WEB_APP_URL);
             const json = await response.json();
             this.eventsData = json.data || [];
-        } catch (error) {
-            this.toast('Gagal memuat data dari server.', 'error');
-        }
+        } catch (error) { this.toast('Gagal memuat data.', 'error'); }
     },
 
     refreshUI: function() {
         const dataInternal = this.eventsData.filter(d => d.Tipe !== 'Eksternal');
         const dataEksternal = this.eventsData.filter(d => d.Tipe === 'Eksternal');
 
-        if (this.table) {
-            this.table.clear();
-            this.table.rows.add(dataInternal);
-            this.table.draw();
+        if (this.table) { this.table.clear(); this.table.rows.add(dataInternal); this.table.draw(); }
+        if (this.tableExt) { this.tableExt.clear(); this.tableExt.rows.add(dataEksternal); this.tableExt.draw(); }
+        if (this.calendar) { this.calendar.removeAllEvents(); this.calendar.addEventSource(this.formatEventsForCalendar(this.eventsData)); }
+        
+        if(typeof DashboardAnalytics !== 'undefined') {
+            DashboardAnalytics.populateCounters(this.eventsData);
+            DashboardAnalytics.renderCharts(this.eventsData);
+            DashboardAnalytics.detectConflicts(this.eventsData);
         }
-        if (this.tableExt) {
-            this.tableExt.clear();
-            this.tableExt.rows.add(dataEksternal);
-            this.tableExt.draw();
-        }
-        if (this.calendar) {
-            const formattedEvents = this.formatEventsForCalendar(this.eventsData);
-            this.calendar.removeAllEvents();
-            this.calendar.addEventSource(formattedEvents);
-        }
-        DashboardAnalytics.populateCounters(this.eventsData);
-        DashboardAnalytics.renderCharts(this.eventsData);
-        DashboardAnalytics.detectConflicts(this.eventsData);
     },
 
     formatEventsForCalendar: function(data) {
-        return data.map(item => {
-            const startDate = new Date(item['Tanggal Mulai']);
-            const endDate = new Date(item['Tanggal Selesai']);
-            const exclusiveEndDate = new Date(endDate);
-            exclusiveEndDate.setDate(exclusiveEndDate.getDate() + 1);
-
-            let eventTitle = `[${item.Unit}] ${item['Nama Kegiatan']}`;
-            let bgColor = this.getUnitColorCode(item.Unit);
-            let textColor = '#ffffff';
-
-            if (item.Tipe === 'Eksternal') {
-                eventTitle = `[EKSTERNAL] ${item['Nama Kegiatan']}`;
-                bgColor = '#ffc107'; 
-                textColor = '#000000';
+        let validEvents = [];
+        data.forEach(item => {
+            const start = new Date(item['Tanggal Mulai']); const end = new Date(item['Tanggal Selesai']);
+            if(!isNaN(start) && !isNaN(end)) {
+                end.setDate(end.getDate() + 1);
+                let isExt = item.Tipe === 'Eksternal';
+                validEvents.push({
+                    id: item['ID (UUID)'], title: (isExt ? '[EKSTERNAL] ' : '') + `[${item.Unit}] ${item['Nama Kegiatan']}`,
+                    start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0], allDay: true,
+                    backgroundColor: isExt ? '#ffc107' : this.getUnitColorCode(item.Unit),
+                    borderColor: isExt ? '#ffc107' : this.getUnitColorCode(item.Unit),
+                    textColor: isExt ? '#000000' : '#ffffff', extendedProps: item
+                });
             }
-
-            return {
-                id: item['ID (UUID)'],
-                title: eventTitle,
-                start: startDate.toISOString().split('T')[0],
-                end: exclusiveEndDate.toISOString().split('T')[0],
-                allDay: true,
-                backgroundColor: bgColor,
-                borderColor: bgColor,
-                textColor: textColor,
-                extendedProps: item
-            };
         });
+        return validEvents;
     },
 
     initDataTables: function() {
-        const dataInternal = this.eventsData.filter(d => d.Tipe !== 'Eksternal');
-        const dataEksternal = this.eventsData.filter(d => d.Tipe === 'Eksternal');
-
+        const dInt = this.eventsData.filter(d => d.Tipe !== 'Eksternal');
+        const dExt = this.eventsData.filter(d => d.Tipe === 'Eksternal');
         const dtDom = '<"row align-items-center mb-3"<"col-sm-12 col-md-6"B><"col-sm-12 col-md-6 d-flex justify-content-md-end"f>>rt<"row align-items-center mt-3"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7 d-flex justify-content-md-end"p>>';
-
-        const dtButtonsInt = [
-            { extend: 'copy', text: '<i class="fas fa-copy me-1"></i> Copy', className: 'btn btn-sm btn-outline-primary mb-2' },
-            { extend: 'excel', text: '<i class="fas fa-file-excel me-1"></i> Excel', className: 'btn btn-sm btn-outline-success mb-2' },
-            { extend: 'pdf', text: '<i class="fas fa-file-pdf me-1"></i> PDF', className: 'btn btn-sm btn-outline-danger mb-2' },
-            { extend: 'print', text: '<i class="fas fa-print me-1"></i> Print', className: 'btn btn-sm btn-outline-secondary mb-2' }
+        
+        const getBtns = (isExt) => [
+            { extend: 'copy', text: '<i class="fas fa-copy me-1"></i> Copy', className: isExt ? 'btn-purple mb-2' : 'btn btn-sm btn-outline-primary mb-2' },
+            { extend: 'excel', text: '<i class="fas fa-file-excel me-1"></i> Excel', className: isExt ? 'btn-purple mb-2' : 'btn btn-sm btn-outline-success mb-2' },
+            { extend: 'print', text: '<i class="fas fa-print me-1"></i> Print', className: isExt ? 'btn-purple mb-2' : 'btn btn-sm btn-outline-secondary mb-2' }
         ];
 
-        const dtButtonsExt = [
-            { extend: 'copy', text: '<i class="fas fa-copy me-1"></i> Copy', className: 'btn-purple mb-2' },
-            { extend: 'excel', text: '<i class="fas fa-file-excel me-1"></i> Excel', className: 'btn-purple mb-2' },
-            { extend: 'pdf', text: '<i class="fas fa-file-pdf me-1"></i> PDF', className: 'btn-purple mb-2' },
-            { extend: 'print', text: '<i class="fas fa-print me-1"></i> Print', className: 'btn-purple mb-2' }
-        ];
-
-        // Mencegah error "cannot reinitialize DataTable"
         if ($.fn.DataTable.isDataTable('#dataTable')) $('#dataTable').DataTable().destroy();
         if ($.fn.DataTable.isDataTable('#dataTableExt')) $('#dataTableExt').DataTable().destroy();
 
-        // TABEL INTERNAL
-        this.table = $('#dataTable').DataTable({
-            data: dataInternal,
-            responsive: true, scrollX: true, dom: dtDom, buttons: dtButtonsInt,
+        // INTERNAL TABLE
+        this.table = $('#dataTable').DataTable({ 
+            data: dInt, responsive: true, scrollX: true, dom: dtDom, buttons: getBtns(false),
             columns: [
-                { data: null, className: 'text-center', defaultContent: '', render: (d, t, r, meta) => meta.row + 1 },
+                { data: null, className: 'text-center', defaultContent: '', render: (d, t, r, m) => m.row + 1 },
                 { data: 'Unit', defaultContent: '-' },
                 { data: 'Nama Kegiatan', className: 'fw-bold text-dark', defaultContent: '-' },
-                { data: 'Tanggal Mulai', defaultContent: '-', render: data => data ? new Date(data).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-' },
-                { data: 'Tanggal Selesai', defaultContent: '-', render: data => data ? new Date(data).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-' },
+                { data: 'Tanggal Mulai', defaultContent: '-', render: d => d ? new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-' },
+                { data: 'Tanggal Selesai', defaultContent: '-', render: d => d ? new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-' },
                 { data: 'PIC', defaultContent: '-' },
-                { 
-                    data: 'ID (UUID)', className: 'text-center', defaultContent: '',
-                    render: id => `
-                        <div class="d-flex justify-content-center gap-2">
-                            <button class="btn btn-sm btn-primary btn-icon" onclick="app.editEvent('${id}')" title="Edit"><i class="fas fa-edit"></i></button>
-                            <button class="btn btn-sm btn-danger btn-icon" onclick="app.deleteEvent('${id}')" title="Hapus"><i class="fas fa-trash-alt"></i></button>
-                        </div>`
+                { data: 'ID (UUID)', className: 'text-center', defaultContent: '',
+                  render: id => `<div class="d-flex justify-content-center gap-2">
+                      <button class="btn btn-sm btn-info btn-icon text-white" onclick="app.viewDetail('${id}')" title="Detail"><i class="fas fa-eye"></i></button>
+                      <button class="btn btn-sm btn-primary btn-icon" onclick="app.editEvent('${id}')" title="Edit"><i class="fas fa-edit"></i></button>
+                      <button class="btn btn-sm btn-danger btn-icon" onclick="app.deleteEvent('${id}')" title="Hapus"><i class="fas fa-trash-alt"></i></button></div>`
                 }
-            ],
-            drawCallback: function() { if (typeof feather !== 'undefined') feather.replace(); }
+            ]
         });
 
-        // TABEL EKSTERNAL (Menggunakan defaultContent agar anti-crash)
-        this.tableExt = $('#dataTableExt').DataTable({
-            data: dataEksternal,
-            responsive: true, scrollX: true, dom: dtDom, buttons: dtButtonsExt,
+        // EKSTERNAL TABLE
+        this.tableExt = $('#dataTableExt').DataTable({ 
+            data: dExt, responsive: true, scrollX: true, dom: dtDom, buttons: getBtns(true),
             columns: [
-                { data: null, className: 'text-center', defaultContent: '', render: (d, t, r, meta) => meta.row + 1 },
-                { data: 'Unit', defaultContent: '-', render: data => `<span class="badge bg-warning text-dark shadow-sm">${data}</span>` },
+                { data: null, className: 'text-center', defaultContent: '', render: (d, t, r, m) => m.row + 1 },
+                { data: 'Unit', defaultContent: '-', render: d => `<span class="badge bg-warning text-dark">${d}</span>` },
                 { data: 'Nama Kegiatan', className: 'fw-bold text-dark', defaultContent: '-' },
-                { data: 'Deskripsi Kegiatan', defaultContent: '-', render: data => data ? `<div style="white-space: normal; min-width: 200px;">${data}</div>` : '-' },
-                { data: 'Tanggal Mulai', defaultContent: '-', render: data => data ? new Date(data).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-' },
-                { data: 'Tanggal Selesai', defaultContent: '-', render: data => data ? new Date(data).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-' },
+                { data: 'Deskripsi Kegiatan', defaultContent: '-', render: d => d ? `<div style="white-space: normal; min-width: 200px;">${d}</div>` : '-' },
+                { data: 'Tanggal Mulai', defaultContent: '-', render: d => d ? new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-' },
+                { data: 'Tanggal Selesai', defaultContent: '-', render: d => d ? new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-' },
                 { data: 'PIC', defaultContent: '-' },
-                { 
-                    data: 'ID (UUID)', className: 'text-center', defaultContent: '',
-                    render: id => `
-                        <div class="d-flex justify-content-center gap-2">
-                            <button class="btn btn-sm btn-primary btn-icon" onclick="app.editEvent('${id}')" title="Edit"><i class="fas fa-edit"></i></button>
-                            <button class="btn btn-sm btn-danger btn-icon" onclick="app.deleteEvent('${id}')" title="Hapus"><i class="fas fa-trash-alt"></i></button>
-                        </div>`
+                { data: 'ID (UUID)', className: 'text-center', defaultContent: '',
+                  render: id => `<div class="d-flex justify-content-center gap-2">
+                      <button class="btn btn-sm btn-info btn-icon text-white" onclick="app.viewDetail('${id}')" title="Detail"><i class="fas fa-eye"></i></button>
+                      <button class="btn btn-sm btn-primary btn-icon" onclick="app.editEvent('${id}')" title="Edit"><i class="fas fa-edit"></i></button>
+                      <button class="btn btn-sm btn-danger btn-icon" onclick="app.deleteEvent('${id}')" title="Hapus"><i class="fas fa-trash-alt"></i></button></div>`
                 }
-            ],
-            drawCallback: function() { if (typeof feather !== 'undefined') feather.replace(); }
+            ]
         });
     },
 
     initCalendar: function() {
-        const calElement = document.getElementById('calendar');
-        const formattedEvents = this.formatEventsForCalendar(this.eventsData);
-
-        this.calendar = new FullCalendar.Calendar(calElement, {
-            initialView: 'dayGridMonth',
-            firstDay: 0, 
-            headerToolbar: {
-                left: 'today prev,next',
-                center: 'title',
-                right: 'dayGridMonth,timeGridWeek,timeGridDay'
-            },
-            buttonText: { today: 'Hari ini', month: 'Bulan', week: 'Minggu', day: 'Hari' },
-            events: formattedEvents,
-            editable: true,
-            droppable: true,
-            selectable: true,
-            dayMaxEvents: true,
-            
-            dateClick: (info) => {
-                this.openModal();
-                $('#tanggal_mulai').val(info.dateStr); 
-            },
-            eventClick: (info) => { this.editEvent(info.event.id); },
-            eventDrop: (info) => { this.syncDragDrop(info.event); },
-            eventResize: (info) => { this.syncDragDrop(info.event); }
+        this.calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
+            initialView: 'dayGridMonth', firstDay: 0, 
+            headerToolbar: { left: 'today prev,next', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' },
+            events: this.formatEventsForCalendar(this.eventsData), editable: true, droppable: true, selectable: true, dayMaxEvents: true,
+            dateClick: (i) => { this.openModal(); $('#tanggal_mulai').val(i.dateStr); },
+            eventClick: (i) => { this.viewDetail(i.event.id); },
+            eventDrop: (i) => { this.syncDragDrop(i.event); }, eventResize: (i) => { this.syncDragDrop(i.event); }
         });
     },
 
     getUnitColorCode: function(unit) {
         const colors = {
-            'Akademik dan Kerja Sama': '#0d6efd',
-            'Non Akademik dan Kemahasiswaan': '#dc3545',
-            'Lembaga Penjaminan Mutu (LPM)': '#6f42c1',
-            'LP2M': '#198754',
-            'Program Studi Pembangunan Sosial': '#0dcaf0',
-            'Program Studi Ilmu Pemerintahan': '#fd7e14',
-            'Sekretariat': '#ffc107',
-            'Unit Pangkalan Data & IT': '#20c997',
-            'Campus Ministry': '#e83e8c',
-            'Penerimaan Mahasiswa Baru (PMB)': '#6610f2',
-            'UPT Perpustakaan': '#d63384',
-            'Instansi Eksternal (Luar Kampus)': '#ffc107'
-        };
-        return colors[unit] || '#6c757d';
+            'Akademik dan Kerja Sama': '#0d6efd', 'Non Akademik dan Kemahasiswaan': '#dc3545', 'Lembaga Penjaminan Mutu (LPM)': '#6f42c1', 'LP2M': '#198754',
+            'Program Studi Pembangunan Sosial': '#0dcaf0', 'Program Studi Ilmu Pemerintahan': '#fd7e14', 'Sekretariat': '#ffc107', 'Unit Pangkalan Data & IT': '#20c997',
+            'Campus Ministry': '#e83e8c', 'Penerimaan Mahasiswa Baru (PMB)': '#6610f2', 'UPT Perpustakaan': '#d63384', 'Instansi Eksternal (Luar Kampus)': '#ffc107'
+        }; return colors[unit] || '#6c757d';
+    },
+
+    viewDetail: function(id) {
+        const item = this.eventsData.find(d => d['ID (UUID)'] === id);
+        if (!item) return;
+        const isExt = item.Tipe === 'Eksternal';
+        const tipeStr = isExt ? 'Eksternal / Luar Kampus' : 'Internal STPM';
+        const tglMulai = new Date(item['Tanggal Mulai']).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+        const tglSelesai = new Date(item['Tanggal Selesai']).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+        
+        let htmlContent = `
+            <table class="table table-sm table-bordered text-start mt-3">
+                <tr><th width="35%" class="bg-light">Tipe</th><td><span class="badge ${isExt ? 'bg-warning text-dark' : 'bg-primary'}">${tipeStr}</span></td></tr>
+                <tr><th class="bg-light">Unit / Instansi</th><td>${item.Unit}</td></tr>
+                <tr><th class="bg-light">Nama Kegiatan</th><td class="fw-bold">${item['Nama Kegiatan']}</td></tr>
+                <tr><th class="bg-light">Tanggal</th><td>${tglMulai} <br><small>s.d</small><br> ${tglSelesai}</td></tr>
+                <tr><th class="bg-light">PIC / Delegasi</th><td>${item.PIC}</td></tr>
+        `;
+        if (isExt) htmlContent += `<tr><th class="bg-light">Deskripsi</th><td>${item['Deskripsi Kegiatan'] || '-'}</td></tr>`;
+        htmlContent += `</table>`;
+
+        Swal.fire({ title: 'Detail Kegiatan', html: htmlContent, icon: 'info', confirmButtonText: 'Tutup', confirmButtonColor: '#0d6efd' });
     },
 
     openModal: function() {
-        $('#kegiatanForm')[0].reset();
-        $('#event_id').val('');
-        $('#tipe_kegiatan').val('Internal').trigger('change'); 
-        $('.select2').val('').trigger('change');
+        $('#kegiatanForm')[0].reset(); $('#event_id').val('');
+        $('#tipe_kegiatan').val('Internal').trigger('change'); $('.select2').val('').trigger('change');
         $('#kegiatanModal').modal('show');
     },
 
     editEvent: function(id) {
         const item = this.eventsData.find(d => d['ID (UUID)'] === id);
         if (!item) return;
-        
-        $('#event_id').val(item['ID (UUID)']);
+        $('#event_id').val(item['ID (UUID)']); 
         $('#tipe_kegiatan').val(item.Tipe || 'Internal').trigger('change'); 
-        if(item.Tipe === 'Eksternal') $('#deskripsi').val(item['Deskripsi Kegiatan']);
-        
-        $('#unit').val(item.Unit).trigger('change');
-        $('#pic').val(item.PIC).trigger('change');
+        $('#unit').val(item.Unit).trigger('change'); 
         $('#nama_kegiatan').val(item['Nama Kegiatan']);
+        $('#deskripsi').val(item['Deskripsi Kegiatan']); 
         
-        const formatDate = (dtStr) => new Date(dtStr).toISOString().split('T')[0];
-        $('#tanggal_mulai').val(formatDate(item['Tanggal Mulai']));
-        $('#tanggal_selesai').val(formatDate(item['Tanggal Selesai']));
-        
+        $('#tanggal_mulai').val(new Date(item['Tanggal Mulai']).toISOString().split('T')[0]);
+        $('#tanggal_selesai').val(new Date(item['Tanggal Selesai']).toISOString().split('T')[0]);
+        $('#pic').val(item.PIC).trigger('change'); 
         $('#kegiatanModal').modal('show');
     },
 
     saveEvent: function() {
         const payload = {
-            id: $('#event_id').val(),
-            tipe: $('#tipe_kegiatan').val(), 
-            deskripsi: $('#deskripsi').val() || '', 
-            unit: $('#unit').val(),
-            nama_kegiatan: $('#nama_kegiatan').val(),
-            tanggal_mulai: $('#tanggal_mulai').val(),
-            tanggal_selesai: $('#tanggal_selesai').val(),
-            pic: $('#pic').val()
+            id: $('#event_id').val(), tipe: $('#tipe_kegiatan').val(), unit: $('#unit').val(), 
+            nama_kegiatan: $('#nama_kegiatan').val(), deskripsi: $('#deskripsi').val() || '', 
+            tanggal_mulai: $('#tanggal_mulai').val(), tanggal_selesai: $('#tanggal_selesai').val(), pic: $('#pic').val()
         };
 
         const action = payload.id ? 'update' : 'add';
-        const btn = $('#btnSave');
+        const newStart = new Date(payload.tanggal_mulai).getTime(); const newEnd = new Date(payload.tanggal_selesai).getTime();
+        let conflicts = [];
 
-        const newStart = new Date(payload.tanggal_mulai).getTime();
-        const newEnd = new Date(payload.tanggal_selesai).getTime();
-        let conflictingEvents = [];
-
-        this.eventsData.forEach(event => {
-            if (payload.id && event['ID (UUID)'] === payload.id) return;
-
-            const existStart = new Date(event['Tanggal Mulai']).getTime();
-            const existEnd = new Date(event['Tanggal Selesai']).getTime();
-
-            if (!isNaN(existStart) && !isNaN(existEnd) && !isNaN(newStart) && !isNaN(newEnd)) {
-                if (newStart <= existEnd && existStart <= newEnd) {
-                    conflictingEvents.push(`• <b>${event['Nama Kegiatan']}</b> <span class="text-primary">(${event.Unit})</span>`);
-                }
+        this.eventsData.forEach(ev => {
+            if (payload.id && ev['ID (UUID)'] === payload.id) return;
+            const eStart = new Date(ev['Tanggal Mulai']).getTime(); const eEnd = new Date(ev['Tanggal Selesai']).getTime();
+            if (!isNaN(eStart) && !isNaN(eEnd) && !isNaN(newStart) && !isNaN(newEnd)) {
+                if (newStart <= eEnd && eStart <= newEnd) conflicts.push(`• <b>${ev['Nama Kegiatan']}</b> <span class="text-primary">(${ev.Unit})</span>`);
             }
         });
 
-        if (conflictingEvents.length > 0) {
+        if (conflicts.length > 0) {
             Swal.fire({
-                title: '⚠️ Peringatan Tabrakan Jadwal',
-                html: `
-                    <div class="text-start mb-2">Tanggal kegiatan berbenturan dengan:</div>
-                    <div class="text-start bg-light p-2 rounded mb-3" style="max-height: 120px; overflow-y: auto; font-size: 0.9rem;">
-                        ${conflictingEvents.join('<br>')}
-                    </div>
-                    <div class="text-start">Apakah kamu yakin ingin tetap menyimpannya?</div>
-                `,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#0d6efd',
-                cancelButtonColor: '#6c757d',
-                confirmButtonText: '<i class="fas fa-save me-1"></i> Ya, Tetap Simpan',
-                cancelButtonText: 'Batal',
-                reverseButtons: true
-            }).then((result) => {
-                if (result.isConfirmed) this.executeSaveToServer(action, payload, btn);
-            });
-        } else {
-            this.executeSaveToServer(action, payload, btn);
-        }
+                title: '⚠️ Tabrakan Jadwal',
+                html: `<div class="text-start mb-2">Berbenturan dengan kegiatan berikut:</div><div class="text-start bg-light p-2 rounded mb-3" style="max-height: 120px; overflow-y: auto; font-size: 0.9rem;">${conflicts.join('<br>')}</div><div class="text-start">Apakah yakin tetap menyimpan?</div>`,
+                icon: 'warning', showCancelButton: true, confirmButtonColor: '#0d6efd', cancelButtonColor: '#6c757d', confirmButtonText: 'Ya, Simpan'
+            }).then(r => { if (r.isConfirmed) this.executeSaveToServer(action, payload, $('#btnSave')); });
+        } else this.executeSaveToServer(action, payload, $('#btnSave'));
     },
 
     executeSaveToServer: async function(action, payload, btn) {
         btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Memproses...');
-
         try {
-            const response = await fetch(GAS_WEB_APP_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: action, payload: payload })
-            });
-            const result = await response.json();
-            
-            if (result.status === 'success') {
-                this.toast('Kegiatan berhasil disimpan!', 'success');
-                $('#kegiatanModal').modal('hide');
-                
-                await this.loadData();
-                this.refreshUI(); 
-            } else {
-                throw new Error(result.message);
-            }
-        } catch (error) {
-            this.toast(error.message, 'error');
-        } finally {
-            btn.prop('disabled', false).text('Simpan Kegiatan');
-        }
+            const res = await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: action, payload: payload }) });
+            const data = await res.json();
+            if (data.status === 'success') { this.toast('Tersimpan!', 'success'); $('#kegiatanModal').modal('hide'); await this.loadData(); this.refreshUI(); } 
+            else throw new Error(data.message);
+        } catch (err) { this.toast(err.message, 'error'); } finally { btn.prop('disabled', false).text('Simpan Kegiatan'); }
     },
 
     deleteEvent: function(id) {
-        Swal.fire({
-            title: 'Hapus?', text: "Hapus juga dari G-Calendar?", icon: 'warning',
-            showCancelButton: true, confirmButtonColor: '#dc3545', confirmButtonText: 'Ya, hapus!'
-        }).then(async (result) => {
-            if (result.isConfirmed) {
+        Swal.fire({ title: 'Hapus?', text: "Hapus juga dari G-Calendar?", icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc3545', confirmButtonText: 'Ya, hapus!'})
+        .then(async r => {
+            if (r.isConfirmed) {
                 try {
-                    const response = await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: 'delete', id: id }) });
-                    const res = await response.json();
-                    if(res.status === 'success') {
-                        this.toast('Data terhapus.', 'success');
-                        await this.loadData();
-                        this.refreshUI();
-                    }
+                    const res = await (await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: 'delete', id: id }) })).json();
+                    if(res.status === 'success') { this.toast('Terhapus.', 'success'); await this.loadData(); this.refreshUI(); }
                 } catch (e) { this.toast('Gagal menghapus.', 'error'); }
             }
         });
     },
 
     syncDragDrop: function(event) {
-        const item = event.extendedProps;
+        const it = event.extendedProps;
         const payload = {
-            id: item['ID (UUID)'], 
-            tipe: item.Tipe || 'Internal',
-            deskripsi: item['Deskripsi Kegiatan'] || '',
-            unit: item.Unit, 
-            nama_kegiatan: item['Nama Kegiatan'],
+            id: it['ID (UUID)'], tipe: it.Tipe || 'Internal', unit: it.Unit, nama_kegiatan: it['Nama Kegiatan'], deskripsi: it['Deskripsi Kegiatan'] || '', 
             tanggal_mulai: event.start.toISOString().split('T')[0],
             tanggal_selesai: event.end ? new Date(event.end.getTime() - 86400000).toISOString().split('T')[0] : event.start.toISOString().split('T')[0],
-            pic: item.PIC
+            pic: it.PIC
         };
-
-        fetch(GAS_WEB_APP_URL, {
-            method: 'POST', body: JSON.stringify({ action: 'update', payload: payload })
-        }).then(res => res.json()).then(() => {
-            this.toast('Waktu berhasil disesuaikan', 'info');
-            this.loadData().then(() => this.refreshUI());
-        });
+        fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: 'update', payload: payload }) })
+        .then(res => res.json()).then(() => { this.toast('Waktu ditarik', 'info'); this.loadData().then(() => this.refreshUI()); });
     },
 
-
-
-
-
-
-
-        /* ==================================================
+    /* ==================================================
        SISTEM IMPORT CSV (KEBAL KARAKTER GAIB BOM & SPASI)
        ================================================== */
     handleCsvUpload: function(file) {
@@ -603,20 +400,7 @@ const app = {
         });
     },
 
-
-
-
-
-
-
-
-    
-    toast: function(message, icon) {
-        Swal.fire({ title: message, icon: icon, toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
-    }
+    toast: function(message, icon) { Swal.fire({ title: message, icon: icon, toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 }); }
 };
 
 $(document).ready(() => app.init());
-
-
-
