@@ -1,672 +1,1009 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
-<head>
-    <meta charset="utf-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-    <title>Sistem Kalender Kegiatan - STPM Santa Ursula</title>
-    
-    <!-- Template Core CSS -->
-    <link href="css/styles.css" rel="stylesheet" />
-    <link href="css/styles2.css" rel="stylesheet" />
-    
-    <!-- Dependencies untuk Sistem Kalender -->
-    <link href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css" rel="stylesheet">
-    <link href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
-    
-    <!-- Icons -->
-    <link rel="icon" type="image/x-icon" href="assets/img/favicon.png" />
-    <script data-search-pseudo-elements defer src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/js/all.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.28.0/feather.min.js"></script>
-    
-    <style>
-        /* Custom Adjustments */
-        .fc-toolbar-title { font-size: 1.25rem !important; font-weight: 600; }
-        .view-section { animation: fadeIn 0.3s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    </style>
-</head>
-<body class="nav-fixed">
-    <!-- Top Navbar -->
-    <nav class="topnav navbar navbar-expand shadow justify-content-between justify-content-sm-start navbar-light bg-white" id="sidenavAccordion">
-        <button class="btn btn-icon btn-transparent-dark order-1 order-lg-0 me-2 ms-lg-2 me-lg-0" id="sidebarToggle"><i data-feather="menu"></i></button>
-        <a class="navbar-brand pe-3 ps-4 ps-lg-2 fw-bold text-primary" href="#">Kalender Kerja STPM Santa Ursula</a>
-        
-        <ul class="navbar-nav align-items-center ms-auto">
-            <!-- User Dropdown-->
-            <li class="nav-item dropdown no-caret dropdown-user me-3 me-lg-4">
-                <a class="btn btn-icon btn-transparent-dark dropdown-toggle" id="navbarDropdownUserImage" href="javascript:void(0);" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><img class="img-fluid" src="assets/img/illustrations/profiles/profile-1.png" /></a>
-                <div class="dropdown-menu dropdown-menu-end border-0 shadow animated--fade-in-up" aria-labelledby="navbarDropdownUserImage">
-                    <h6 class="dropdown-header d-flex align-items-center">
-                        <img class="dropdown-user-img" src="assets/img/illustrations/profiles/profile-1.png" />
-                        <div class="dropdown-user-details">
-                            <div class="dropdown-user-details-name">Admin STPM</div>
-                            <div class="dropdown-user-details-email">admin@stpm-sanur.ac.id</div>
+    <head>
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <title>Sistem Kalender Kegiatan - STPM Santa Ursula</title>
+
+        <!-- Template Core CSS -->
+        <link href="css/styles.css" rel="stylesheet" />
+        <link href="css/styles2.css" rel="stylesheet" />
+
+        <!-- Dependencies untuk Sistem Kalender -->
+        <link href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+        <link href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css" rel="stylesheet" />
+        <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+        <link
+            href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css"
+            rel="stylesheet"
+        />
+        <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet" />
+
+        <!-- Icons -->
+        <link rel="icon" type="image/x-icon" href="assets/img/favicon.png" />
+        <script
+            data-search-pseudo-elements
+            defer
+            src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/js/all.min.js"
+        ></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.28.0/feather.min.js"></script>
+
+        <style>
+            /* Custom Adjustments */
+            .fc-toolbar-title {
+                font-size: 1.25rem !important;
+                font-weight: 600;
+            }
+            .view-section {
+                animation: fadeIn 0.3s ease-in-out;
+            }
+            @keyframes fadeIn {
+                from {
+                    opacity: 0;
+                }
+                to {
+                    opacity: 1;
+                }
+            }
+        </style>
+    </head>
+    <body class="nav-fixed">
+        <!-- Top Navbar -->
+        <nav
+            class="topnav navbar navbar-expand shadow justify-content-between justify-content-sm-start navbar-light bg-white"
+            id="sidenavAccordion"
+        >
+            <button
+                class="btn btn-icon btn-transparent-dark order-1 order-lg-0 me-2 ms-lg-2 me-lg-0"
+                id="sidebarToggle"
+            >
+                <i data-feather="menu"></i>
+            </button>
+            <a class="navbar-brand pe-3 ps-4 ps-lg-2 fw-bold text-primary" href="#">Kalender Kerja STPM Santa Ursula</a>
+
+            <ul class="navbar-nav align-items-center ms-auto">
+                <!-- User Dropdown-->
+                <li class="nav-item dropdown no-caret dropdown-user me-3 me-lg-4">
+                    <a
+                        class="btn btn-icon btn-transparent-dark dropdown-toggle"
+                        id="navbarDropdownUserImage"
+                        href="javascript:void(0);"
+                        role="button"
+                        data-bs-toggle="dropdown"
+                        aria-haspopup="true"
+                        aria-expanded="false"
+                        ><img class="img-fluid" src="assets/img/illustrations/profiles/profile-1.png"
+                    /></a>
+                    <div
+                        class="dropdown-menu dropdown-menu-end border-0 shadow animated--fade-in-up"
+                        aria-labelledby="navbarDropdownUserImage"
+                    >
+                        <h6 class="dropdown-header d-flex align-items-center">
+                            <img class="dropdown-user-img" src="assets/img/illustrations/profiles/profile-1.png" />
+                            <div class="dropdown-user-details">
+                                <div class="dropdown-user-details-name">Admin STPM</div>
+                                <div class="dropdown-user-details-email">admin@stpm-sanur.ac.id</div>
+                            </div>
+                        </h6>
+                    </div>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Sidebar & Content -->
+        <div id="layoutSidenav">
+            <div id="layoutSidenav_nav">
+                <nav class="sidenav shadow-right sidenav-light">
+                    <div class="sidenav-menu">
+                        <div class="nav accordion" id="accordionSidenav">
+                            <div class="sidenav-menu-heading">Menu Utama</div>
+
+                            <a
+                                class="nav-link menu-link active"
+                                href="#"
+                                data-target="dashboard-view"
+                                data-title="Dashboard Analitik"
+                                data-icon="activity"
+                            >
+                                <div class="nav-link-icon"><i data-feather="activity"></i></div>
+                                Dashboard
+                            </a>
+                            <a
+                                class="nav-link menu-link"
+                                href="#"
+                                data-target="calendar-view"
+                                data-title="Kalender Kegiatan"
+                                data-icon="calendar"
+                            >
+                                <div class="nav-link-icon"><i data-feather="calendar"></i></div>
+                                Kalender
+                            </a>
+                            <a
+                                class="nav-link menu-link"
+                                href="#"
+                                data-target="table-view"
+                                data-title="Manajemen Data Kegiatan"
+                                data-icon="grid"
+                            >
+                                <div class="nav-link-icon"><i data-feather="grid"></i></div>
+                                Data Kegiatan
+                            </a>
+
+
+
+<a class="nav-link menu-link" href="#" data-target="dokumentasi-view" data-title="Dokumentasi Kegiatan" data-icon="camera">
+    <div class="nav-link-icon"><i data-feather="camera"></i></div>
+    Dokumentasi Kegiatan
+</a>
+
                         </div>
-                    </h6>
-                </div>
-            </li>
-        </ul>
-    </nav>
-
-    <!-- Sidebar & Content -->
-    <div id="layoutSidenav">
-        <div id="layoutSidenav_nav">
-            <nav class="sidenav shadow-right sidenav-light">
-                <div class="sidenav-menu">
-                    <div class="nav accordion" id="accordionSidenav">
-                        <div class="sidenav-menu-heading">Menu Utama</div>
-                        
-                        <a class="nav-link menu-link active" href="#" data-target="dashboard-view" data-title="Dashboard Analitik" data-icon="activity">
-                            <div class="nav-link-icon"><i data-feather="activity"></i></div>
-                            Dashboard
-                        </a>
-                        <a class="nav-link menu-link" href="#" data-target="calendar-view" data-title="Kalender Kegiatan" data-icon="calendar">
-                            <div class="nav-link-icon"><i data-feather="calendar"></i></div>
-                            Kalender
-                        </a>
-                        <a class="nav-link menu-link" href="#" data-target="table-view" data-title="Manajemen Data Kegiatan" data-icon="grid">
-                            <div class="nav-link-icon"><i data-feather="grid"></i></div>
-                            Data Kegiatan
-                        </a>
                     </div>
-                </div>
-                <div class="sidenav-footer">
-                    <div class="sidenav-footer-content">
-                        <div class="sidenav-footer-subtitle">Sistem Informasi</div>
-                        <div class="sidenav-footer-title">Kalender Institusi</div>
+                    <div class="sidenav-footer">
+                        <div class="sidenav-footer-content">
+                            <div class="sidenav-footer-subtitle">Sistem Informasi</div>
+                            <div class="sidenav-footer-title">Kalender Institusi</div>
+                        </div>
                     </div>
-                </div>
-            </nav>
-        </div>
-        
-        <!-- Main Content Area -->
-        <div id="layoutSidenav_content">
-            <main>
-                <!-- Page Header -->
-                <header class="page-header page-header-dark bg-gradient-primary-to-secondary pb-10">
-                    <div class="container-xl px-4">
-                        <div class="page-header-content pt-4">
-                            <div class="row align-items-center justify-content-between">
-                                <div class="col-auto mt-4">
-                                    <h1 class="page-header-title">
-                                        <div class="page-header-icon"><i id="header-icon" data-feather="activity"></i></div>
-                                        <span id="page-title">Dashboard Analitik</span>
-                                    </h1>
-                                    <div class="page-header-subtitle">Overview statistik dan manajemen jadwal kegiatan STPM Santa Ursula</div>
-                                </div>
-                                <div class="col-auto mt-4 d-flex gap-2">
-                                    <!-- Input File Tersembunyi -->
-                                    <input type="file" id="fileCsv" accept=".csv" class="d-none">
-                                    
-                                    <!-- Tombol Import -->
-                                    <button class="btn btn-outline-success fw-bold shadow-sm bg-white" onclick="document.getElementById('fileCsv').click()">
-                                        <i data-feather="upload" class="me-2"></i> Import CSV
-                                    </button>
-                                    
-                                    <button class="btn btn-danger text-white shadow-sm" onclick="app.resetSemuaData()" title="Reset Spreadsheet & Google Calendar">
-                                        <i class="fas fa-skull-crossbones me-2"></i> Reset Sistem
-                                    </button>
+                </nav>
+            </div>
 
-                                    
-                                    <!-- Tombol Tambah Manual -->
-                                    <button class="btn btn-primary fw-bold shadow-sm" onclick="app.openModal()">
-                                        <i data-feather="plus" class="me-2"></i> Tambah Kegiatan
-                                    </button>
+            <!-- Main Content Area -->
+            <div id="layoutSidenav_content">
+                <main>
+                    <!-- Page Header -->
+                    <header class="page-header page-header-dark bg-gradient-primary-to-secondary pb-10">
+                        <div class="container-xl px-4">
+                            <div class="page-header-content pt-4">
+                                <div class="row align-items-center justify-content-between">
+                                    <div class="col-auto mt-4">
+                                        <h1 class="page-header-title">
+                                            <div class="page-header-icon">
+                                                <i id="header-icon" data-feather="activity"></i>
+                                            </div>
+                                            <span id="page-title">Dashboard Analitik</span>
+                                        </h1>
+                                        <div class="page-header-subtitle">
+                                            Overview statistik dan manajemen jadwal kegiatan STPM Santa Ursula
+                                        </div>
+                                    </div>
+                                    <div class="col-auto mt-4 d-flex gap-2">
+                                        <!-- Input File Tersembunyi -->
+                                        <input type="file" id="fileCsv" accept=".csv" class="d-none" />
+
+                                        <!-- Tombol Import -->
+                                        <button
+                                            class="btn btn-outline-success fw-bold shadow-sm bg-white"
+                                            onclick="document.getElementById('fileCsv').click()"
+                                        >
+                                            <i data-feather="upload" class="me-2"></i> Import CSV
+                                        </button>
+
+                                        <button
+                                            class="btn btn-danger text-white shadow-sm"
+                                            onclick="app.resetSemuaData()"
+                                            title="Reset Spreadsheet & Google Calendar"
+                                        >
+                                            <i class="fas fa-skull-crossbones me-2"></i> Reset Sistem
+                                        </button>
+
+                                        <!-- Tombol Tambah Manual -->
+                                        <button class="btn btn-primary fw-bold shadow-sm" onclick="app.openModal()">
+                                            <i data-feather="plus" class="me-2"></i> Tambah Kegiatan
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </header>
-                
-                <!-- Page Content -->
-                <div class="container-xl px-4 mt-n10">
-                    
-                    <!-- Loader -->
-                    <div id="app-loader" class="text-center py-5 bg-white rounded shadow-sm mb-4">
-                        <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;"></div>
-                        <h5 class="text-muted">Menyinkronkan data dengan Google Server...</h5>
-                    </div>
+                    </header>
 
-                    <div id="app-content" class="d-none">
-
-
-
-
-
-<!-- VIEW 1: DASHBOARD -->
-<!-- VIEW 1: DASHBOARD -->
-<div id="dashboard-view" class="view-section">
-    <!-- Row 1: KPI Summary Cards -->
-    <div class="row g-3 mb-4">
-        <div class="col-xl-3 col-md-6">
-            <div class="card bg-primary text-white h-100 shadow-sm border-0">
-                <div class="card-body d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="text-white-75 small fw-bold text-uppercase">Total Kegiatan</div>
-                        <div class="text-lg fw-bolder fs-3" id="stat-total">0</div>
-                    </div>
-                    <i data-feather="layers" class="text-white-50" style="width: 2.5rem; height: 2.5rem;"></i>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6">
-            <div class="card bg-warning text-white h-100 shadow-sm border-0">
-                <div class="card-body d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="text-white-75 small fw-bold text-uppercase">Kegiatan Bulan Ini</div>
-                        <div class="text-lg fw-bolder fs-3" id="stat-month">0</div>
-                    </div>
-                    <i data-feather="calendar" class="text-white-50" style="width: 2.5rem; height: 2.5rem;"></i>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6">
-            <div class="card bg-success text-white h-100 shadow-sm border-0">
-                <div class="card-body d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="text-white-75 small fw-bold text-uppercase">Kegiatan Akan Datang</div>
-                        <div class="text-lg fw-bolder fs-3" id="stat-upcoming">0</div>
-                    </div>
-                    <i data-feather="clock" class="text-white-50" style="width: 2.5rem; height: 2.5rem;"></i>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6">
-            <div class="card bg-danger text-white h-100 shadow-sm border-0">
-                <div class="card-body d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="text-white-75 small fw-bold text-uppercase">Potensi Tabrakan</div>
-                        <div class="text-lg fw-bolder fs-3" id="stat-conflicts">0</div>
-                    </div>
-                    <i data-feather="alert-triangle" class="text-white-50" style="width: 2.5rem; height: 2.5rem;"></i>
-                </div>
-            </div>
-        </div>
-
-        <!-- Metric Cards: SDM & Konflik -->
-        <div class="col-xl-4 col-md-6">
-            <div class="card bg-info text-white h-100 shadow-sm border-0">
-                <div class="card-body d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="text-white-75 small fw-bold text-uppercase">Unit Paling Sibuk (Bulan Ini)</div>
-                        <div class="text-lg fw-bolder fs-5 mt-1" id="stat-busiest-unit">-</div>
-                    </div>
-                    <i data-feather="award" class="text-white-50" style="width: 2.2rem; height: 2.2rem;"></i>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-4 col-md-6">
-            <div class="card bg-dark text-white h-100 shadow-sm border-0">
-                <div class="card-body d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="text-white-75 small fw-bold text-uppercase">PIC Paling Aktif (Bulan Ini)</div>
-                        <div class="text-lg fw-bolder fs-5 mt-1" id="stat-busiest-pic">-</div>
-                    </div>
-                    <i data-feather="user-check" class="text-white-50" style="width: 2.2rem; height: 2.2rem;"></i>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-4 col-md-12">
-            <div class="card bg-secondary text-white h-100 shadow-sm border-0">
-                <div class="card-body d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="text-white-75 small fw-bold text-uppercase">Tingkat Bentrok Jadwal</div>
-                        <div class="text-lg fw-bolder fs-5 mt-1" id="stat-conflict-rate">0%</div>
-                    </div>
-                    <i data-feather="shield-off" class="text-white-50" style="width: 2.2rem; height: 2.2rem;"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Row 2: Heatmap Beban Puncak -->
-    <div class="row g-3 mb-4">
-        <div class="col-xl-6">
-
-
-
-
-            
-            <div class="card shadow-sm border-0">
-<div class="card-header bg-transparent fw-bold text-primary border-bottom d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center py-3">
-    <span class="mb-1 mb-md-0"><i class="fas fa-th me-2"></i> Peak Workload Heatmap</span>
-    <small class="text-muted fw-normal">Daftar Hari & Bulan dengan Intensitas Tertinggi</small>
-</div>
-                <div class="card-body">
-                    <div id="heatmap-container" class="d-flex flex-wrap gap-2 justify-content-center p-2">
-                        <!-- Heatmap Grid di-render dari JS -->
-                    </div>
-                    <div class="d-flex justify-content-end align-items-center gap-2 mt-3 small text-muted">
-                        <span>Rendah</span>
-                        <span class="heatmap-legend" style="background:#e9ecef; width:14px; height:14px; border-radius:3px;"></span>
-                        <span class="heatmap-legend" style="background:#c6e7ff; width:14px; height:14px; border-radius:3px;"></span>
-                        <span class="heatmap-legend" style="background:#70b8ff; width:14px; height:14px; border-radius:3px;"></span>
-                        <span class="heatmap-legend" style="background:#0d6efd; width:14px; height:14px; border-radius:3px;"></span>
-                        <span>Tinggi</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- Row 3: Trend & Proporsi Unit -->
-        <div class="col-xl-6">
-            <div class="card shadow-sm h-100 border-0">
-                <div class="card-header bg-transparent fw-bold text-primary border-bottom">Trend Kegiatan Tahunan</div>
-                <div class="card-body">
-                    <div style="position: relative; height: 300px; width: 100%;">
-                        <canvas id="barChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-6">
-            <div class="card shadow-sm h-100 border-0">
-                <div class="card-header bg-transparent fw-bold text-primary border-bottom">Proporsi Kegiatan per Unit</div>
-                <div class="card-body d-flex justify-content-center align-items-center">
-                    <div style="position: relative; height: 300px; width: 100%;">
-                        <canvas id="doughnutChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- Row 4: Analitik Lanjutan (Hari Kerja & Durasi Rata-Rata) -->
-        <div class="col-xl-6">
-            <div class="card shadow-sm h-100 border-0">
-                <div class="card-header bg-transparent fw-bold text-primary border-bottom">
-                    Distribusi Hari Kerja (Weekday vs Weekend)
-                </div>
-                <div class="card-body">
-                    <div style="position: relative; height: 300px; width: 100%;">
-                        <canvas id="dayOfWeekChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-6">
-            <div class="card shadow-sm h-100 border-0">
-                <div class="card-header bg-transparent fw-bold text-primary border-bottom">
-                    Rata-rata Durasi Kegiatan per Unit (Hari)
-                </div>
-                <div class="card-body">
-                    <div style="position: relative; height: 300px; width: 100%;">
-                        <canvas id="avgDurationChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- Row 5: PIC Workload & Conflict Log -->
-        <div class="col-xl-6">
-            <div class="card shadow-sm h-100 border-0">
-                <div class="card-header bg-transparent fw-bold text-primary border-bottom">Beban Kerja PIC (Keseluruhan)</div>
-                <div class="card-body">
-                    <div style="position: relative; height: 300px; width: 100%;">
-                        <canvas id="picBarChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-6">
-            <div class="card shadow-sm h-100 border-0 border-start border-4 border-danger">
-                <div class="card-header bg-transparent fw-bold text-danger border-bottom d-flex justify-content-between align-items-center">
-                    <span>Log Tabrakan Jadwal</span>
-                    <span class="badge bg-danger rounded-pill" id="badge-conflict-count">0</span>
-                </div>
-                <div class="card-body p-0" style="max-height: 330px; overflow-y: auto;">
-                    <div class="list-group list-group-flush" id="conflict-list"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-
-
-
-
-
-
-
-
-
-
-                        <!-- VIEW 2: CALENDAR -->
-                        <div id="calendar-view" class="view-section d-none mb-4">
-                            <div class="card shadow-sm border-0">
-                                <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center py-3">
-                                    <h5 class="mb-0 text-primary fw-bold">
-                                        <i data-feather="calendar" class="me-2"></i> Jadwal Kegiatan Institusi
-                                    </h5>
-                                    <button class="btn btn-sm btn-primary" onclick="app.openModal()">
-                                        <i data-feather="plus" class="me-1"></i> Tambah Event
-                                    </button>
-                                </div>
-                                <div class="card-body p-4">
-                                    <!-- Kontainer utama FullCalendar -->
-                                    <div id="calendar"></div>
-                                </div>
-                            </div>
+                    <!-- Page Content -->
+                    <div class="container-xl px-4 mt-n10">
+                        <!-- Loader -->
+                        <div id="app-loader" class="text-center py-5 bg-white rounded shadow-sm mb-4">
+                            <div
+                                class="spinner-border text-primary mb-3"
+                                role="status"
+                                style="width: 3rem; height: 3rem"
+                            ></div>
+                            <h5 class="text-muted">Menyinkronkan data dengan Google Server...</h5>
                         </div>
 
-                        <!-- VIEW 3: DATA TABLES -->
+                        <div id="app-content" class="d-none">
+                            <!-- VIEW 1: DASHBOARD -->
+                            <!-- VIEW 1: DASHBOARD -->
+                            <div id="dashboard-view" class="view-section">
+                                <!-- Row 1: KPI Summary Cards -->
+                                <div class="row g-3 mb-4">
+                                    <div class="col-xl-3 col-md-6">
+                                        <div class="card bg-primary text-white h-100 shadow-sm border-0">
+                                            <div class="card-body d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <div class="text-white-75 small fw-bold text-uppercase">
+                                                        Total Kegiatan
+                                                    </div>
+                                                    <div class="text-lg fw-bolder fs-3" id="stat-total">0</div>
+                                                </div>
+                                                <i
+                                                    data-feather="layers"
+                                                    class="text-white-50"
+                                                    style="width: 2.5rem; height: 2.5rem"
+                                                ></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-xl-3 col-md-6">
+                                        <div class="card bg-warning text-white h-100 shadow-sm border-0">
+                                            <div class="card-body d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <div class="text-white-75 small fw-bold text-uppercase">
+                                                        Kegiatan Bulan Ini
+                                                    </div>
+                                                    <div class="text-lg fw-bolder fs-3" id="stat-month">0</div>
+                                                </div>
+                                                <i
+                                                    data-feather="calendar"
+                                                    class="text-white-50"
+                                                    style="width: 2.5rem; height: 2.5rem"
+                                                ></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-xl-3 col-md-6">
+                                        <div class="card bg-success text-white h-100 shadow-sm border-0">
+                                            <div class="card-body d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <div class="text-white-75 small fw-bold text-uppercase">
+                                                        Kegiatan Akan Datang
+                                                    </div>
+                                                    <div class="text-lg fw-bolder fs-3" id="stat-upcoming">0</div>
+                                                </div>
+                                                <i
+                                                    data-feather="clock"
+                                                    class="text-white-50"
+                                                    style="width: 2.5rem; height: 2.5rem"
+                                                ></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-xl-3 col-md-6">
+                                        <div class="card bg-danger text-white h-100 shadow-sm border-0">
+                                            <div class="card-body d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <div class="text-white-75 small fw-bold text-uppercase">
+                                                        Potensi Tabrakan
+                                                    </div>
+                                                    <div class="text-lg fw-bolder fs-3" id="stat-conflicts">0</div>
+                                                </div>
+                                                <i
+                                                    data-feather="alert-triangle"
+                                                    class="text-white-50"
+                                                    style="width: 2.5rem; height: 2.5rem"
+                                                ></i>
+                                            </div>
+                                        </div>
+                                    </div>
 
+                                    <!-- Metric Cards: SDM & Konflik -->
+                                    <div class="col-xl-4 col-md-6">
+                                        <div class="card bg-info text-white h-100 shadow-sm border-0">
+                                            <div class="card-body d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <div class="text-white-75 small fw-bold text-uppercase">
+                                                        Unit Paling Sibuk (Bulan Ini)
+                                                    </div>
+                                                    <div class="text-lg fw-bolder fs-5 mt-1" id="stat-busiest-unit">
+                                                        -
+                                                    </div>
+                                                </div>
+                                                <i
+                                                    data-feather="award"
+                                                    class="text-white-50"
+                                                    style="width: 2.2rem; height: 2.2rem"
+                                                ></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-xl-4 col-md-6">
+                                        <div class="card bg-dark text-white h-100 shadow-sm border-0">
+                                            <div class="card-body d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <div class="text-white-75 small fw-bold text-uppercase">
+                                                        PIC Paling Aktif (Bulan Ini)
+                                                    </div>
+                                                    <div class="text-lg fw-bolder fs-5 mt-1" id="stat-busiest-pic">
+                                                        -
+                                                    </div>
+                                                </div>
+                                                <i
+                                                    data-feather="user-check"
+                                                    class="text-white-50"
+                                                    style="width: 2.2rem; height: 2.2rem"
+                                                ></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-xl-4 col-md-12">
+                                        <div class="card bg-secondary text-white h-100 shadow-sm border-0">
+                                            <div class="card-body d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <div class="text-white-75 small fw-bold text-uppercase">
+                                                        Tingkat Bentrok Jadwal
+                                                    </div>
+                                                    <div class="text-lg fw-bolder fs-5 mt-1" id="stat-conflict-rate">
+                                                        0%
+                                                    </div>
+                                                </div>
+                                                <i
+                                                    data-feather="shield-off"
+                                                    class="text-white-50"
+                                                    style="width: 2.2rem; height: 2.2rem"
+                                                ></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
 
-<!-- VIEW 3: DATA TABLES -->
+                                <!-- Row 2: Heatmap Beban Puncak -->
+                                <div class="row g-3 mb-4">
+                                    <div class="col-xl-6">
+                                        <div class="card shadow-sm border-0">
+                                            <div
+                                                class="card-header bg-transparent fw-bold text-primary border-bottom d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center py-3"
+                                            >
+                                                <span class="mb-1 mb-md-0"
+                                                    ><i class="fas fa-th me-2"></i> Peak Workload Heatmap</span
+                                                >
+                                                <small class="text-muted fw-normal"
+                                                    >Daftar Hari & Bulan dengan Intensitas Tertinggi</small
+                                                >
+                                            </div>
+                                            <div class="card-body">
+                                                <div
+                                                    id="heatmap-container"
+                                                    class="d-flex flex-wrap gap-2 justify-content-center p-2"
+                                                >
+                                                    <!-- Heatmap Grid di-render dari JS -->
+                                                </div>
+                                                <div
+                                                    class="d-flex justify-content-end align-items-center gap-2 mt-3 small text-muted"
+                                                >
+                                                    <span>Rendah</span>
+                                                    <span
+                                                        class="heatmap-legend"
+                                                        style="
+                                                            background: #e9ecef;
+                                                            width: 14px;
+                                                            height: 14px;
+                                                            border-radius: 3px;
+                                                        "
+                                                    ></span>
+                                                    <span
+                                                        class="heatmap-legend"
+                                                        style="
+                                                            background: #c6e7ff;
+                                                            width: 14px;
+                                                            height: 14px;
+                                                            border-radius: 3px;
+                                                        "
+                                                    ></span>
+                                                    <span
+                                                        class="heatmap-legend"
+                                                        style="
+                                                            background: #70b8ff;
+                                                            width: 14px;
+                                                            height: 14px;
+                                                            border-radius: 3px;
+                                                        "
+                                                    ></span>
+                                                    <span
+                                                        class="heatmap-legend"
+                                                        style="
+                                                            background: #0d6efd;
+                                                            width: 14px;
+                                                            height: 14px;
+                                                            border-radius: 3px;
+                                                        "
+                                                    ></span>
+                                                    <span>Tinggi</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Row 3: Trend & Proporsi Unit -->
+                                    <div class="col-xl-6">
+                                        <div class="card shadow-sm h-100 border-0">
+                                            <div class="card-header bg-transparent fw-bold text-primary border-bottom">
+                                                Trend Kegiatan Tahunan
+                                            </div>
+                                            <div class="card-body">
+                                                <div style="position: relative; height: 300px; width: 100%">
+                                                    <canvas id="barChart"></canvas>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-xl-6">
+                                        <div class="card shadow-sm h-100 border-0">
+                                            <div class="card-header bg-transparent fw-bold text-primary border-bottom">
+                                                Proporsi Kegiatan per Unit
+                                            </div>
+                                            <div class="card-body d-flex justify-content-center align-items-center">
+                                                <div style="position: relative; height: 300px; width: 100%">
+                                                    <canvas id="doughnutChart"></canvas>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Row 4: Analitik Lanjutan (Hari Kerja & Durasi Rata-Rata) -->
+                                    <div class="col-xl-6">
+                                        <div class="card shadow-sm h-100 border-0">
+                                            <div class="card-header bg-transparent fw-bold text-primary border-bottom">
+                                                Distribusi Hari Kerja (Weekday vs Weekend)
+                                            </div>
+                                            <div class="card-body">
+                                                <div style="position: relative; height: 300px; width: 100%">
+                                                    <canvas id="dayOfWeekChart"></canvas>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-xl-6">
+                                        <div class="card shadow-sm h-100 border-0">
+                                            <div class="card-header bg-transparent fw-bold text-primary border-bottom">
+                                                Rata-rata Durasi Kegiatan per Unit (Hari)
+                                            </div>
+                                            <div class="card-body">
+                                                <div style="position: relative; height: 300px; width: 100%">
+                                                    <canvas id="avgDurationChart"></canvas>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Row 5: PIC Workload & Conflict Log -->
+                                    <div class="col-xl-6">
+                                        <div class="card shadow-sm h-100 border-0">
+                                            <div class="card-header bg-transparent fw-bold text-primary border-bottom">
+                                                Beban Kerja PIC (Keseluruhan)
+                                            </div>
+                                            <div class="card-body">
+                                                <div style="position: relative; height: 300px; width: 100%">
+                                                    <canvas id="picBarChart"></canvas>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-xl-6">
+                                        <div class="card shadow-sm h-100 border-0 border-start border-4 border-danger">
+                                            <div
+                                                class="card-header bg-transparent fw-bold text-danger border-bottom d-flex justify-content-between align-items-center"
+                                            >
+                                                <span>Log Tabrakan Jadwal</span>
+                                                <span class="badge bg-danger rounded-pill" id="badge-conflict-count"
+                                                    >0</span
+                                                >
+                                            </div>
+                                            <div class="card-body p-0" style="max-height: 330px; overflow-y: auto">
+                                                <div class="list-group list-group-flush" id="conflict-list"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
+                            <!-- VIEW 2: CALENDAR -->
+                            <div id="calendar-view" class="view-section d-none mb-4">
+                                <div class="card shadow-sm border-0">
+                                    <div
+                                        class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center py-3"
+                                    >
+                                        <h5 class="mb-0 text-primary fw-bold">
+                                            <i data-feather="calendar" class="me-2"></i> Jadwal Kegiatan Institusi
+                                        </h5>
+                                        <button class="btn btn-sm btn-primary" onclick="app.openModal()">
+                                            <i data-feather="plus" class="me-1"></i> Tambah Event
+                                        </button>
+                                    </div>
+                                    <div class="card-body p-4">
+                                        <!-- Kontainer utama FullCalendar -->
+                                        <div id="calendar"></div>
+                                    </div>
+                                </div>
+                            </div>
 
+                            <!-- VIEW 3: DATA TABLES -->
 
+                            <!-- VIEW 3: DATA TABLES -->
 
-<!-- VIEW 3: DATA TABLES -->
-<div id="table-view" class="view-section d-none mb-4">
-    
-    <!-- ==========================================
+                            <!-- VIEW 3: DATA TABLES -->
+                            <div id="table-view" class="view-section d-none mb-4">
+                                <!-- ==========================================
          KARTU 1: TABEL KEGIATAN INTERNAL
          ========================================== -->
-    <div class="card shadow-sm border-0 mb-4">
-        <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center py-3">
-            <h5 class="mb-0 text-primary fw-bold">
-                <i data-feather="grid" class="me-2"></i> Database Kegiatan Institusi (Internal)
-            </h5>
-        </div>
-        <div class="card-body p-4">
-            <!-- BILAH FILTER INTERNAL -->
-            <div class="row g-3 mb-4 align-items-end bg-light p-3 rounded border border-light">
-                <div class="col-md-4">
-                    <label class="form-label fw-bold text-muted small">Filter Unit Kerja</label>
-                    <select class="form-select select2-filter" id="filterUnit">
-                        <option value="">Semua Unit</option>
-                        <option value="Akademik dan Kerja Sama">Akademik dan Kerja Sama</option>
-                        <option value="Non Akademik dan Kemahasiswaan">Non Akademik dan Kemahasiswaan</option>
-                        <option value="Lembaga Penjaminan Mutu (LPM)">Lembaga Penjaminan Mutu (LPM)</option>
-                        <option value="LP2M">LP2M</option>
-                        <option value="Program Studi Pembangunan Sosial">Program Studi Pembangunan Sosial</option>
-                        <option value="Program Studi Ilmu Pemerintahan">Program Studi Ilmu Pemerintahan</option>
-                        <option value="Sekretariat">Sekretariat</option>
-                        <option value="Unit Pangkalan Data & IT">Unit Pangkalan Data & IT</option>
-                        <option value="Campus Ministry">Campus Ministry</option>
-                        <option value="Penerimaan Mahasiswa Baru (PMB)">Penerimaan Mahasiswa Baru (PMB)</option>
-                        <option value="UPT Perpustakaan">UPT Perpustakaan</option>
-                    </select>
-                </div>
-                <div class="col-md-5">
-                    <label class="form-label fw-bold text-muted small">Rentang Tanggal Pelaksanaan</label>
-                    <input type="text" class="form-control flatpickr-range bg-white" id="filterDate" placeholder="Pilih rentang tanggal...">
-                </div>
-                <div class="col-md-3">
-                    <button class="btn btn-reset-purple w-100 fw-bold" id="btnResetFilter">
-                        <i class="fas fa-sync-alt me-2"></i> Reset Filter
-                    </button>
-                </div>
-            </div>
+                                <div class="card shadow-sm border-0 mb-4">
+                                    <div
+                                        class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center py-3"
+                                    >
+                                        <h5 class="mb-0 text-primary fw-bold">
+                                            <i data-feather="grid" class="me-2"></i> Database Kegiatan Institusi
+                                            (Internal)
+                                        </h5>
+                                    </div>
+                                    <div class="card-body p-4">
+                                        <!-- BILAH FILTER INTERNAL -->
+                                        <div
+                                            class="row g-3 mb-4 align-items-end bg-light p-3 rounded border border-light"
+                                        >
+                                            <div class="col-md-4">
+                                                <label class="form-label fw-bold text-muted small"
+                                                    >Filter Unit Kerja</label
+                                                >
+                                                <select class="form-select select2-filter" id="filterUnit">
+                                                    <option value="">Semua Unit</option>
+                                                    <option value="Akademik dan Kerja Sama">
+                                                        Akademik dan Kerja Sama
+                                                    </option>
+                                                    <option value="Non Akademik dan Kemahasiswaan">
+                                                        Non Akademik dan Kemahasiswaan
+                                                    </option>
+                                                    <option value="Lembaga Penjaminan Mutu (LPM)">
+                                                        Lembaga Penjaminan Mutu (LPM)
+                                                    </option>
+                                                    <option value="LP2M">LP2M</option>
+                                                    <option value="Program Studi Pembangunan Sosial">
+                                                        Program Studi Pembangunan Sosial
+                                                    </option>
+                                                    <option value="Program Studi Ilmu Pemerintahan">
+                                                        Program Studi Ilmu Pemerintahan
+                                                    </option>
+                                                    <option value="Sekretariat">Sekretariat</option>
+                                                    <option value="Unit Pangkalan Data & IT">
+                                                        Unit Pangkalan Data & IT
+                                                    </option>
+                                                    <option value="Campus Ministry">Campus Ministry</option>
+                                                    <option value="Penerimaan Mahasiswa Baru (PMB)">
+                                                        Penerimaan Mahasiswa Baru (PMB)
+                                                    </option>
+                                                    <option value="UPT Perpustakaan">UPT Perpustakaan</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-5">
+                                                <label class="form-label fw-bold text-muted small"
+                                                    >Rentang Tanggal Pelaksanaan</label
+                                                >
+                                                <input
+                                                    type="text"
+                                                    class="form-control flatpickr-range bg-white"
+                                                    id="filterDate"
+                                                    placeholder="Pilih rentang tanggal..."
+                                                />
+                                            </div>
+                                            <div class="col-md-3">
+                                                <button class="btn btn-reset-purple w-100 fw-bold" id="btnResetFilter">
+                                                    <i class="fas fa-sync-alt me-2"></i> Reset Filter
+                                                </button>
+                                            </div>
+                                        </div>
 
-            <!-- TABEL INTERNAL -->
-            <div class="table-responsive">
-                <table id="dataTable" class="table table-striped table-hover w-100 align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th class="text-center">No</th>
-                            <th>Unit Kerja</th>
-                            <th>Nama Kegiatan</th>
-                            <th>Mulai</th>
-                            <th>Selesai</th>
-                            <th>PIC</th>
-                            <th class="text-center">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+                                        <!-- TABEL INTERNAL -->
+                                        <div class="table-responsive">
+                                            <table
+                                                id="dataTable"
+                                                class="table table-striped table-hover w-100 align-middle"
+                                            >
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th class="text-center">No</th>
+                                                        <th>Unit Kerja</th>
+                                                        <th>Nama Kegiatan</th>
+                                                        <th>Mulai</th>
+                                                        <th>Selesai</th>
+                                                        <th>PIC</th>
+                                                        <th class="text-center">Aksi</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
 
-    <!-- ==========================================
+                                <!-- ==========================================
          KARTU 2: TABEL KEGIATAN EKSTERNAL
          ========================================== -->
-    <div class="card shadow-sm border-0">
-        <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center py-3">
-            <h5 class="mb-0 text-purple fw-bold">
-                <i data-feather="external-link" class="me-2"></i> Database Kegiatan Eksternal (Luar Kampus)
-            </h5>
-        </div>
-        <div class="card-body p-4">
-            <!-- BILAH FILTER EKSTERNAL -->
-            <div class="row g-3 mb-4 align-items-end bg-light p-3 rounded border border-light">
-                <div class="col-md-4">
-                    <label class="form-label fw-bold text-muted small">Filter Instansi</label>
-                    <select class="form-select select2-filter" id="filterUnitExt">
-                        <option value="">Semua Instansi</option>
-                        <!-- Kita isi otomatis dengan daftar unit yang sama atau unit eksternal -->
-                        <option value="Instansi Eksternal (Luar Kampus)">Instansi Eksternal (Luar Kampus)</option>
-                        <option value="Akademik dan Kerja Sama">Akademik dan Kerja Sama</option>
-                        <option value="Non Akademik dan Kemahasiswaan">Non Akademik dan Kemahasiswaan</option>
-                        <option value="LP2M">LP2M</option>
-                    </select>
-                </div>
-                <div class="col-md-5">
-                    <label class="form-label fw-bold text-muted small">Rentang Tanggal Pelaksanaan</label>
-                    <input type="text" class="form-control flatpickr-range bg-white" id="filterDateExt" placeholder="Pilih rentang tanggal...">
-                </div>
-                <div class="col-md-3">
-                    <button class="btn btn-reset-purple w-100 fw-bold" id="btnResetFilterExt">
-                        <i class="fas fa-sync-alt me-2"></i> Reset Filter
+                                <div class="card shadow-sm border-0">
+                                    <div
+                                        class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center py-3"
+                                    >
+                                        <h5 class="mb-0 text-purple fw-bold">
+                                            <i data-feather="external-link" class="me-2"></i> Database Kegiatan
+                                            Eksternal (Luar Kampus)
+                                        </h5>
+                                    </div>
+                                    <div class="card-body p-4">
+                                        <!-- BILAH FILTER EKSTERNAL -->
+                                        <div
+                                            class="row g-3 mb-4 align-items-end bg-light p-3 rounded border border-light"
+                                        >
+                                            <div class="col-md-4">
+                                                <label class="form-label fw-bold text-muted small"
+                                                    >Filter Instansi</label
+                                                >
+                                                <select class="form-select select2-filter" id="filterUnitExt">
+                                                    <option value="">Semua Instansi</option>
+                                                    <!-- Kita isi otomatis dengan daftar unit yang sama atau unit eksternal -->
+                                                    <option value="Instansi Eksternal (Luar Kampus)">
+                                                        Instansi Eksternal (Luar Kampus)
+                                                    </option>
+                                                    <option value="Akademik dan Kerja Sama">
+                                                        Akademik dan Kerja Sama
+                                                    </option>
+                                                    <option value="Non Akademik dan Kemahasiswaan">
+                                                        Non Akademik dan Kemahasiswaan
+                                                    </option>
+                                                    <option value="LP2M">LP2M</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-5">
+                                                <label class="form-label fw-bold text-muted small"
+                                                    >Rentang Tanggal Pelaksanaan</label
+                                                >
+                                                <input
+                                                    type="text"
+                                                    class="form-control flatpickr-range bg-white"
+                                                    id="filterDateExt"
+                                                    placeholder="Pilih rentang tanggal..."
+                                                />
+                                            </div>
+                                            <div class="col-md-3">
+                                                <button
+                                                    class="btn btn-reset-purple w-100 fw-bold"
+                                                    id="btnResetFilterExt"
+                                                >
+                                                    <i class="fas fa-sync-alt me-2"></i> Reset Filter
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <!-- TABEL EKSTERNAL (DENGAN KOLOM DESKRIPSI) -->
+                                        <div class="table-responsive">
+                                            <table
+                                                id="dataTableExt"
+                                                class="table table-striped table-hover w-100 align-middle"
+                                            >
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th class="text-center">No</th>
+                                                        <th>Instansi / Unit</th>
+                                                        <th>Nama Kegiatan</th>
+                                                        <th style="min-width: 250px">Deskripsi Kegiatan</th>
+                                                        <!-- Kolom Baru -->
+                                                        <th>Mulai</th>
+                                                        <th>Selesai</th>
+                                                        <th>Delegasi / PIC</th>
+                                                        <th class="text-center">Aksi</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+
+
+
+<!-- VIEW 4: DOKUMENTASI KEGIATAN -->
+<div id="dokumentasi-view" class="view-section d-none mb-4">
+    <div class="row g-4">
+        <!-- Tabel Dokumentasi -->
+        <div class="col-xl-8">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center py-3">
+                    <h5 class="mb-0 text-primary fw-bold"><i data-feather="camera" class="me-2"></i> Arsip Dokumentasi</h5>
+                    <button class="btn btn-sm btn-primary fw-bold shadow-sm" onclick="app.openDokumentasiModal()">
+                        <i data-feather="plus" class="me-1"></i> Tambah Dokumentasi
                     </button>
                 </div>
+                <div class="card-body p-4 table-responsive">
+                    <table id="dataTableDok" class="table table-striped table-hover w-100 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>No</th>
+                                <th>Nama Kegiatan</th>
+                                <th>Tanggal</th>
+                                <th class="text-center">Galeri</th>
+                                <th class="text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
             </div>
-
-            <!-- TABEL EKSTERNAL (DENGAN KOLOM DESKRIPSI) -->
-            <div class="table-responsive">
-                <table id="dataTableExt" class="table table-striped table-hover w-100 align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th class="text-center">No</th>
-                            <th>Instansi / Unit</th>
-                            <th>Nama Kegiatan</th>
-                            <th style="min-width: 250px;">Deskripsi Kegiatan</th> <!-- Kolom Baru -->
-                            <th>Mulai</th>
-                            <th>Selesai</th>
-                            <th>Delegasi / PIC</th>
-                            <th class="text-center">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
+        </div>
+        <!-- Kalender Dokumentasi -->
+        <div class="col-xl-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-transparent border-bottom py-3">
+                    <h5 class="mb-0 text-primary fw-bold"><i data-feather="calendar" class="me-2"></i> Kalender Dokumentasi</h5>
+                </div>
+                <div class="card-body p-3">
+                    <div id="calendar-dokumentasi"></div>
+                </div>
             </div>
         </div>
     </div>
-
 </div>
 
 
+                            </div>
+                        </div>
+                    </div>
+                </main>
 
+                <footer class="footer-admin mt-auto footer-light">
+                    <div class="container-xl px-4">
+                        <div class="row">
+                            <div class="col-md-6 small">Copyright &copy; STPM Santa Ursula 2026</div>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        </div>
 
+        <!-- Modal Form Kegiatan -->
 
-
-
-
-
-
-
-
-
-                        
+        <!-- Modal Form Kegiatan baru -->
+        <div class="modal fade" id="kegiatanModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content glass-modal">
+                    <div class="modal-header border-bottom-0">
+                        <h5 class="modal-title fw-bold">Formulir Kegiatan</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
 
+                    <form id="kegiatanForm">
+                        <div class="modal-body pb-0">
+                            <input type="hidden" id="event_id" />
+                            <div class="row g-3">
+                                <!-- TIPE KEGIATAN -->
+                                <div class="col-md-12">
+                                    <label class="form-label fw-bold text-primary">Jenis Kegiatan</label>
+                                    <select class="form-select border-primary" id="tipe_kegiatan" required>
+                                        <option value="Internal">Kegiatan Internal STPM Santa Ursula</option>
+                                        <option value="Eksternal">Kegiatan Eksternal (Undangan/Instansi Luar)</option>
+                                    </select>
+                                </div>
 
+                                <!-- UNIT KERJA / INSTANSI -->
+                                <div class="col-md-12">
+                                    <label class="form-label">Unit Kerja / Instansi Penyelenggara</label>
+                                    <select class="form-select select2" id="unit" required>
+                                        <option value="">Pilih Unit...</option>
+                                        <option value="Akademik dan Kerja Sama">Akademik dan Kerja Sama</option>
+                                        <option value="Non Akademik dan Kemahasiswaan">
+                                            Non Akademik dan Kemahasiswaan
+                                        </option>
+                                        <option value="Lembaga Penjaminan Mutu (LPM)">
+                                            Lembaga Penjaminan Mutu (LPM)
+                                        </option>
+                                        <option value="LP2M">LP2M</option>
+                                        <option value="Program Studi Pembangunan Sosial">
+                                            Program Studi Pembangunan Sosial
+                                        </option>
+                                        <option value="Program Studi Ilmu Pemerintahan">
+                                            Program Studi Ilmu Pemerintahan
+                                        </option>
+                                        <option value="Sekretariat">Sekretariat</option>
+                                        <option value="Unit Pangkalan Data & IT">Unit Pangkalan Data & IT</option>
+                                        <option value="Campus Ministry">Campus Ministry</option>
+                                        <option value="Penerimaan Mahasiswa Baru (PMB)">
+                                            Penerimaan Mahasiswa Baru (PMB)
+                                        </option>
+                                        <option value="UPT Perpustakaan">UPT Perpustakaan</option>
+                                        <option value="Instansi Eksternal (Luar Kampus)">
+                                            Instansi Eksternal (Luar Kampus)
+                                        </option>
+                                    </select>
+                                </div>
 
+                                <!-- NAMA KEGIATAN -->
+                                <div class="col-md-12">
+                                    <label class="form-label">Nama Kegiatan</label>
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="nama_kegiatan"
+                                        required
+                                        placeholder="Contoh: Rapat Koordinasi"
+                                    />
+                                </div>
+
+                                <!-- DESKRIPSI (HANYA MUNCUL JIKA EKSTERNAL) -->
+                                <div class="col-md-12 d-none" id="wrap_deskripsi">
+                                    <label class="form-label">Deskripsi Kegiatan Eksternal</label>
+                                    <textarea
+                                        class="form-control"
+                                        id="deskripsi"
+                                        rows="3"
+                                        placeholder="Contoh: Menghadiri undangan jalan sehat Hari Pancasila dari Pemda Kabupaten Ende..."
+                                    ></textarea>
+                                </div>
+
+                                <!-- TANGGAL -->
+                                <div class="col-md-6">
+                                    <label class="form-label">Tanggal Mulai</label>
+                                    <input
+                                        type="text"
+                                        class="form-control flatpickr-date"
+                                        id="tanggal_mulai"
+                                        required
+                                        placeholder="YYYY-MM-DD"
+                                    />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Tanggal Selesai</label>
+                                    <input
+                                        type="text"
+                                        class="form-control flatpickr-date"
+                                        id="tanggal_selesai"
+                                        required
+                                        placeholder="YYYY-MM-DD"
+                                    />
+                                </div>
+
+                                <!-- PIC / DELEGASI -->
+                                <div class="col-md-12">
+                                    <label class="form-label">PIC / Delegasi</label>
+                                    <select class="form-select select2" id="pic" required>
+                                        <option value="">Pilih Penanggung Jawab...</option>
+                                        <option value="Yulita Eme, S.Sos., M.Si">Yulita Eme, S.Sos., M.Si</option>
+                                        <option value="Ngea Andreas, S.Sos., M.Si">Ngea Andreas, S.Sos., M.Si</option>
+                                        <option value="Fidentus Didakus Darma Saputra, S.IP., M.IP">
+                                            Fidentus Didakus Darma Saputra, S.IP., M.IP
+                                        </option>
+                                        <option value="Viktoria Dalima, S.S., M.Hum">
+                                            Viktoria Dalima, S.S., M.Hum
+                                        </option>
+                                        <option value="Richardus Beda Toulwala, S.Fil., M.Si">
+                                            Richardus Beda Toulwala, S.Fil., M.Si
+                                        </option>
+                                        <option value="Bartholy Antony Surya Lengo, S.IP., MPA">
+                                            Bartholy Antony Surya Lengo, S.IP., MPA
+                                        </option>
+                                        <option value="Patricius Marianus Botha, S.Fil., M.Si">
+                                            Patricius Marianus Botha, S.Fil., M.Si
+                                        </option>
+                                        <option value="Petronela Somi Kedan, S.E., M.Sc">
+                                            Petronela Somi Kedan, S.E., M.Sc
+                                        </option>
+                                        <option value="Helenerius Ajo Leda, S. Sos., M.I.P">
+                                            Helenerius Ajo Leda, S. Sos., M.I.P
+                                        </option>
+                                        <option value="Andrianto Umbu Ndjandji, S.AP., M.A.P">
+                                            Andrianto Umbu Ndjandji, S.AP., M.A.P
+                                        </option>
+                                        <option value="Konfridus Roynaldus Buku, S.Fil., M.Sosio">
+                                            Konfridus Roynaldus Buku, S.Fil., M.Sosio
+                                        </option>
+                                        <option value="Oktavianus Daluamang Payong, S.I.P., M.I.P">
+                                            Oktavianus Daluamang Payong, S.I.P., M.I.P
+                                        </option>
+                                        <option value="Emanuel Natalis, S.Fil., S.H., M.H">
+                                            Emanuel Natalis, S.Fil., S.H., M.H
+                                        </option>
+                                        <option value="Dominikus Rangga Hayon,  S.Fil., MA.C">
+                                            Dominikus Rangga Hayon, S.Fil., MA.C
+                                        </option>
+                                        <option value="Herman Yosef Nende Lingge Kumanireng, S.Sos., M.IP">
+                                            Herman Yosef Nende Lingge Kumanireng, S.Sos., M.IP
+                                        </option>
+                                        <option value="Patrisius Hinggu Njurumana, S.I.P., M.A">
+                                            Patrisius Hinggu Njurumana, S.I.P., M.A
+                                        </option>
+                                        <option value="Raymundus Lullus Rua Raki, S.Fil., M.A">
+                                            Raymundus Lullus Rua Raki, S.Fil., M.A
+                                        </option>
+                                        <option value="Domitius Pau, S.Sos., M.A">Domitius Pau, S.Sos., M.A</option>
+                                        <option value="Andreas W. F. Weroh, S.Kom">Andreas W. F. Weroh, S.Kom</option>
+                                        <option value="Maria Yenista Enga No, S.T">Maria Yenista Enga No, S.T</option>
+                                        <option value="Maximilianus Gabriel Janga, S.Sos">
+                                            Maximilianus Gabriel Janga, S.Sos
+                                        </option>
+                                        <option value="Lusia Marcelina Mere, S.AP">Lusia Marcelina Mere, S.AP</option>
+                                        <option value="Yohanes Noa, S.IP">Yohanes Noa, S.IP</option>
+                                        <option value="Agustinus Surya N.B.L. Veregrent, S.Kom">
+                                            Agustinus Surya N.B.L. Veregrent, S.Kom
+                                        </option>
+                                        <option value="Maria Fransiska Dona, S.Sos">Maria Fransiska Dona, S.Sos</option>
+                                        <option value="Aloysius Kanisius Goo, S.I.Pust">
+                                            Aloysius Kanisius Goo, S.I.Pust
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer border-top-0 pt-4">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                            <button type="submit" class="btn btn-primary px-4" id="btnSave">Simpan Kegiatan</button>
+                        </div>
+                    </form>
                 </div>
-            </main>
-            
-            <footer class="footer-admin mt-auto footer-light">
-                <div class="container-xl px-4">
-                    <div class="row">
-                        <div class="col-md-6 small">Copyright &copy; STPM Santa Ursula 2026</div>
+            </div>
+        </div>
+
+
+
+<!-- Modal Form Dokumentasi -->
+<div class="modal fade" id="dokumentasiModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-bottom-0">
+                <h5 class="modal-title fw-bold text-primary">Upload Dokumentasi</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="dokumentasiForm">
+                <div class="modal-body pb-0">
+                    <input type="hidden" id="dok_id">
+                    <div class="mb-3">
+                        <label class="form-label">Nama Kegiatan</label>
+                        <input type="text" class="form-control" id="dok_nama" required placeholder="Contoh: Rapat Kerja 2026">
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label class="form-label">Mulai</label>
+                            <input type="text" class="form-control flatpickr-date" id="dok_mulai" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Selesai</label>
+                            <input type="text" class="form-control flatpickr-date" id="dok_selesai" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Deskripsi Kegiatan</label>
+                        <textarea class="form-control" id="dok_deskripsi" rows="3" required placeholder="Ceritakan ringkasan kegiatan..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Upload Foto (Maks 10 Foto)</label>
+                        <input class="form-control" type="file" id="dok_fotos" accept="image/png, image/jpeg" multiple required>
+                        <div class="form-text text-danger" id="dok_warning"></div>
                     </div>
                 </div>
-            </footer>
-        </div>
-    </div>
-
-    <!-- Modal Form Kegiatan -->
-
-<!-- Modal Form Kegiatan baru -->
-    <div class="modal fade" id="kegiatanModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content glass-modal">
-                <div class="modal-header border-bottom-0">
-                    <h5 class="modal-title fw-bold">Formulir Kegiatan</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <div class="modal-footer border-top-0 pt-4">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary px-4" id="btnSaveDok">Simpan & Upload</button>
                 </div>
-
-
-
-
-
-<form id="kegiatanForm">
-    <div class="modal-body pb-0">
-        <input type="hidden" id="event_id">
-        <div class="row g-3">
-            <!-- TIPE KEGIATAN -->
-            <div class="col-md-12">
-                <label class="form-label fw-bold text-primary">Jenis Kegiatan</label>
-                <select class="form-select border-primary" id="tipe_kegiatan" required>
-                    <option value="Internal">Kegiatan Internal STPM Santa Ursula</option>
-                    <option value="Eksternal">Kegiatan Eksternal (Undangan/Instansi Luar)</option>
-                </select>
-            </div>
-            
-            <!-- UNIT KERJA / INSTANSI -->
-            <div class="col-md-12">
-                <label class="form-label">Unit Kerja / Instansi Penyelenggara</label>
-                <select class="form-select select2" id="unit" required>
-                    <option value="">Pilih Unit...</option>
-                    <option value="Akademik dan Kerja Sama">Akademik dan Kerja Sama</option>
-                    <option value="Non Akademik dan Kemahasiswaan">Non Akademik dan Kemahasiswaan</option>
-                    <option value="Lembaga Penjaminan Mutu (LPM)">Lembaga Penjaminan Mutu (LPM)</option>
-                    <option value="LP2M">LP2M</option>
-                    <option value="Program Studi Pembangunan Sosial">Program Studi Pembangunan Sosial</option>
-                    <option value="Program Studi Ilmu Pemerintahan">Program Studi Ilmu Pemerintahan</option>
-                    <option value="Sekretariat">Sekretariat</option>
-                    <option value="Unit Pangkalan Data & IT">Unit Pangkalan Data & IT</option>
-                    <option value="Campus Ministry">Campus Ministry</option>
-                    <option value="Penerimaan Mahasiswa Baru (PMB)">Penerimaan Mahasiswa Baru (PMB)</option>
-                    <option value="UPT Perpustakaan">UPT Perpustakaan</option>
-                    <option value="Instansi Eksternal (Luar Kampus)">Instansi Eksternal (Luar Kampus)</option>
-                </select>
-            </div>
-            
-            <!-- NAMA KEGIATAN -->
-            <div class="col-md-12">
-                <label class="form-label">Nama Kegiatan</label>
-                <input type="text" class="form-control" id="nama_kegiatan" required placeholder="Contoh: Rapat Koordinasi">
-            </div>
-            
-            <!-- DESKRIPSI (HANYA MUNCUL JIKA EKSTERNAL) -->
-            <div class="col-md-12 d-none" id="wrap_deskripsi">
-                <label class="form-label">Deskripsi Kegiatan Eksternal</label>
-                <textarea class="form-control" id="deskripsi" rows="3" placeholder="Contoh: Menghadiri undangan jalan sehat Hari Pancasila dari Pemda Kabupaten Ende..."></textarea>
-            </div>
-
-            <!-- TANGGAL -->
-            <div class="col-md-6">
-                <label class="form-label">Tanggal Mulai</label>
-                <input type="text" class="form-control flatpickr-date" id="tanggal_mulai" required placeholder="YYYY-MM-DD">
-            </div>
-            <div class="col-md-6">
-                <label class="form-label">Tanggal Selesai</label>
-                <input type="text" class="form-control flatpickr-date" id="tanggal_selesai" required placeholder="YYYY-MM-DD">
-            </div>
-
-            <!-- PIC / DELEGASI -->
-            <div class="col-md-12">
-                <label class="form-label">PIC / Delegasi</label>
-                <select class="form-select select2" id="pic" required>
-                    <option value="">Pilih Penanggung Jawab...</option>
-                    <option value="Yulita Eme, S.Sos., M.Si">Yulita Eme, S.Sos., M.Si</option>
-                    <option value="Ngea Andreas, S.Sos., M.Si">Ngea Andreas, S.Sos., M.Si</option>
-                    <option value="Fidentus Didakus Darma Saputra, S.IP., M.IP">Fidentus Didakus Darma Saputra, S.IP., M.IP</option>
-                    <option value="Viktoria Dalima, S.S., M.Hum">Viktoria Dalima, S.S., M.Hum</option>
-                    <option value="Richardus Beda Toulwala, S.Fil., M.Si">Richardus Beda Toulwala, S.Fil., M.Si</option>
-                    <option value="Bartholy Antony Surya Lengo, S.IP., MPA">Bartholy Antony Surya Lengo, S.IP., MPA</option>
-                    <option value="Patricius Marianus Botha, S.Fil., M.Si">Patricius Marianus Botha, S.Fil., M.Si</option>
-                    <option value="Petronela Somi Kedan, S.E., M.Sc">Petronela Somi Kedan, S.E., M.Sc</option>
-                    <option value="Helenerius Ajo Leda, S. Sos., M.I.P">Helenerius Ajo Leda, S. Sos., M.I.P</option>
-                    <option value="Andrianto Umbu Ndjandji, S.AP., M.A.P">Andrianto Umbu Ndjandji, S.AP., M.A.P</option>
-                    <option value="Konfridus Roynaldus Buku, S.Fil., M.Sosio">Konfridus Roynaldus Buku, S.Fil., M.Sosio</option>
-                    <option value="Oktavianus Daluamang Payong, S.I.P., M.I.P">Oktavianus Daluamang Payong, S.I.P., M.I.P</option>
-                    <option value="Emanuel Natalis, S.Fil., S.H., M.H">Emanuel Natalis, S.Fil., S.H., M.H</option>
-                    <option value="Dominikus Rangga Hayon,  S.Fil., MA.C">Dominikus Rangga Hayon,  S.Fil., MA.C</option>
-                    <option value="Herman Yosef Nende Lingge Kumanireng, S.Sos., M.IP">Herman Yosef Nende Lingge Kumanireng, S.Sos., M.IP</option>
-                    <option value="Patrisius Hinggu Njurumana, S.I.P., M.A">Patrisius Hinggu Njurumana, S.I.P., M.A</option>
-                    <option value="Raymundus Lullus Rua Raki, S.Fil., M.A">Raymundus Lullus Rua Raki, S.Fil., M.A</option>
-                    <option value="Domitius Pau, S.Sos., M.A">Domitius Pau, S.Sos., M.A</option>
-                    <option value="Andreas W. F. Weroh, S.Kom">Andreas W. F. Weroh, S.Kom</option>
-                    <option value="Maria Yenista Enga No, S.T">Maria Yenista Enga No, S.T</option>
-                    <option value="Maximilianus Gabriel Janga, S.Sos">Maximilianus Gabriel Janga, S.Sos</option>
-                    <option value="Lusia Marcelina Mere, S.AP">Lusia Marcelina Mere, S.AP</option>
-                    <option value="Yohanes Noa, S.IP">Yohanes Noa, S.IP</option>
-                    <option value="Agustinus Surya N.B.L. Veregrent, S.Kom">Agustinus Surya N.B.L. Veregrent, S.Kom</option>
-                    <option value="Maria Fransiska Dona, S.Sos">Maria Fransiska Dona, S.Sos</option>
-                    <option value="Aloysius Kanisius Goo, S.I.Pust">Aloysius Kanisius Goo, S.I.Pust</option>
-                </select>
-            </div>
+            </form>
         </div>
     </div>
-    <div class="modal-footer border-top-0 pt-4">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-        <button type="submit" class="btn btn-primary px-4" id="btnSave">Simpan Kegiatan</button>
-    </div>
-</form>
+</div>
 
+        <!-- Core Template Scripts -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="js/scripts.js"></script>
+        <!-- JANGAN DIHAPUS, ini bawaan template untuk Sidebar Toggle dll -->
 
+        <!-- Dependencies App Scripts -->
+        <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+        <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+        <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+        <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+        <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+        <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+        <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
 
-
-
-
-
-
-
-
-            </div>
-        </div>
-    </div>
-
-
-
-
-
-
-
-
-
-
-    <!-- Core Template Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="js/scripts.js"></script> <!-- JANGAN DIHAPUS, ini bawaan template untuk Sidebar Toggle dll -->
-    
-    <!-- Dependencies App Scripts -->
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
-    
-    <!-- Plugins -->
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-    <!-- Tambahkan di area plugin -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-    <!-- Custom Logic -->
-    <script src="js/dashboard-charts.js"></script>
-    <script src="js/app.js"></script>
-</body>
+        <!-- Plugins -->
+        <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+        <!-- Tambahkan di area plugin -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+        <!-- Custom Logic -->
+        <script src="js/dashboard-charts.js"></script>
+        <script src="js/app.js"></script>
+    </body>
 </html>
