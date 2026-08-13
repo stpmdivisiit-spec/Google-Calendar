@@ -1,6 +1,6 @@
 /**
  * KONFIGURASI UTAMA - SIM KALENDER STPM SANTA URSULA
- * (VERSI DUAL-SHEET + INTEGRASI DOKUMENTASI & GALERI)
+ * (VERSI DUAL-SHEET + INTEGRASI DOKUMENTASI & GALERI TANPA KOMPRESI)
  */
 const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxb_eQbMQtpR3sS6IZiMLqcIzOjtzB2RZ9CSIDr6Yn9UHdTUw4XIw-nwsOIpXK8xLYucg/exec'; 
 
@@ -133,13 +133,13 @@ const app = {
             const btn = $('#btnSaveDok');
             const files = $('#dok_fotos')[0].files;
             
-            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i> Mengompres & Uploading...');
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i> Mengupload file original...');
             
             try {
                 let fotoBase64Array = [];
                 for (let i = 0; i < files.length; i++) {
-                    const compressed = await app.compressImage(files[i]);
-                    fotoBase64Array.push(compressed);
+                    const base64File = await app.fileToBase64(files[i]);
+                    fotoBase64Array.push(base64File);
                 }
 
                 const payload = {
@@ -162,7 +162,7 @@ const app = {
                     throw new Error(data.message);
                 }
             } catch (err) {
-                app.toast('Gagal mengupload. Pastikan ukuran total tidak melebihi batas.', 'error');
+                app.toast('Gagal mengupload. Pastikan ukuran file tidak terlalu besar.', 'error');
             } finally {
                 btn.prop('disabled', false).text('Simpan & Upload');
             }
@@ -517,27 +517,22 @@ const app = {
     },
 
     /* ==================================================
-       SISTEM DOKUMENTASI KEGIATAN & KOMPRES FOTO
+       SISTEM DOKUMENTASI KEGIATAN (FILE MURNI TANPA KOMPRESI)
        ================================================== */
-    compressImage: function(file) {
-        return new Promise((resolve) => {
+    fileToBase64: function(file) {
+        return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.readAsDataURL(file);
-            reader.onload = (event) => {
-                const img = new Image();
-                img.src = event.target.result;
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const MAX_WIDTH = 800; 
-                    const scaleSize = MAX_WIDTH / img.width;
-                    canvas.width = MAX_WIDTH;
-                    canvas.height = img.height * scaleSize;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-                    resolve({ data: dataUrl.split(',')[1], mime: 'image/jpeg' });
-                }
+            reader.onload = () => {
+                const result = reader.result;
+                const base64Data = result.split(',')[1];
+                const mimeType = file.type || result.split(';')[0].split(':')[1];
+                resolve({
+                    data: base64Data,
+                    mime: mimeType
+                });
             };
+            reader.onerror = (error) => reject(error);
         });
     },
 
