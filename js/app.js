@@ -625,9 +625,6 @@ const app = {
         });
     },
 
-    /* ==================================================
-       SISTEM RESET TOTAL (SAPU JAGAT)
-       ================================================== */
     resetSemuaData: function() {
         Swal.fire({
             title: '⚠️ BAHAYA: RESET TOTAL SISTEM?',
