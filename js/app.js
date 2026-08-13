@@ -1,6 +1,6 @@
 /**
  * KONFIGURASI UTAMA - SIM KALENDER STPM SANTA URSULA
- * (VERSI DUAL-SHEET DENGAN NORMALISASI TANGGAL AUTOMATIS)
+ * (VERSI DUAL-SHEET + INTEGRASI DOKUMENTASI & GALERI)
  */
 const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxb_eQbMQtpR3sS6IZiMLqcIzOjtzB2RZ9CSIDr6Yn9UHdTUw4XIw-nwsOIpXK8xLYucg/exec'; 
 
@@ -9,28 +9,26 @@ function parseToISODate(dateStr) {
     if (!dateStr) return '';
     dateStr = String(dateStr).trim();
     
-    // Format YYYY-MM-DD atau YYYY/MM/DD
     if (/^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(dateStr)) {
         const parts = dateStr.split(/[-/]/);
         return `${parts[0]}-${String(parts[1]).padStart(2, '0')}-${String(parts[2]).padStart(2, '0')}`;
     }
     
-    // Format DD/MM/YYYY atau DD-MM-YYYY (Sesuai Excel Indonesia)
     if (/^\d{1,2}[-/]\d{1,2}[-/]\d{4}$/.test(dateStr)) {
         const parts = dateStr.split(/[-/]/);
         return `${parts[2]}-${String(parts[1]).padStart(2, '0')}-${String(parts[0]).padStart(2, '0')}`;
     }
     
-    // Fallback jika berupa Date String standar
     const dt = new Date(dateStr);
-    if (!isNaN(dt.getTime())) {
-        return dt.toISOString().split('T')[0];
-    }
+    if (!isNaN(dt.getTime())) return dt.toISOString().split('T')[0];
     return '';
 }
 
+// HELPER: Penunda (Sleep) untuk mencegah Google Calendar memblokir sistem (Rate Limiting)
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 const app = {
-    eventsData: [], table: null, tableExt: null, calendar: null,
+    eventsData: [], table: null, tableExt: null, tableDok: null, calendar: null, calendarDok: null,
 
     init: async function() {
         this.setupPlugins();
@@ -56,6 +54,9 @@ const app = {
     setupDataTablesFilter: function() {
         $.fn.dataTable.ext.search.push((settings, data, dataIndex) => {
             const isExt = settings.nTable.id === 'dataTableExt';
+            const isDok = settings.nTable.id === 'dataTableDok';
+            if (isDok) return true;
+
             const currentTable = isExt ? this.tableExt : this.table;
             if (!currentTable) return true;
 
@@ -106,6 +107,10 @@ const app = {
                 if (this.table) this.table.columns.adjust().responsive.recalc(); 
                 if (this.tableExt) this.tableExt.columns.adjust().responsive.recalc(); 
             }, 100);
+            else if (target === 'dokumentasi-view') setTimeout(() => {
+                if (this.tableDok) this.tableDok.columns.adjust().responsive.recalc();
+                if (this.calendarDok) this.calendarDok.render();
+            }, 100);
         });
 
         const setupFilter = (unitId, dateId, tableObj, resetId) => {
@@ -117,6 +122,56 @@ const app = {
 
         $('#fileCsv').on('change', (e) => { const file = e.target.files[0]; if (!file) return; this.handleCsvUpload(file); $(e.target).val(''); });
         $('#kegiatanForm').on('submit', (e) => { e.preventDefault(); this.saveEvent(); });
+
+        // Event Listener untuk Form Dokumentasi
+        $('#dok_fotos').on('change', function() {
+            if (this.files.length > 10) {
+                $('#dok_warning').text('Maksimal hanya 10 foto yang diizinkan!');
+                this.value = '';
+            } else {
+                $('#dok_warning').text('');
+            }
+        });
+
+        $('#dokumentasiForm').on('submit', async (e) => {
+            e.preventDefault();
+            const btn = $('#btnSaveDok');
+            const files = $('#dok_fotos')[0].files;
+            
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i> Mengompres & Uploading...');
+            
+            try {
+                let fotoBase64Array = [];
+                for (let i = 0; i < files.length; i++) {
+                    const compressed = await app.compressImage(files[i]);
+                    fotoBase64Array.push(compressed);
+                }
+
+                const payload = {
+                    nama_kegiatan: $('#dok_nama').val(),
+                    deskripsi: $('#dok_deskripsi').val(),
+                    tanggal_mulai: parseToISODate($('#dok_mulai').val()),
+                    tanggal_selesai: parseToISODate($('#dok_selesai').val()),
+                    fotos: fotoBase64Array
+                };
+
+                const res = await fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: 'add_dok', payload: payload }) });
+                const data = await res.json();
+                
+                if (data.status === 'success') {
+                    app.toast('Dokumentasi Tersimpan!', 'success');
+                    $('#dokumentasiModal').modal('hide');
+                    await app.loadData();
+                    app.refreshUI();
+                } else {
+                    throw new Error(data.message);
+                }
+            } catch (err) {
+                app.toast('Gagal mengupload dokumentasi.', 'error');
+            } finally {
+                btn.prop('disabled', false).text('Simpan & Upload');
+            }
+        });
     },
 
     loadData: async function() {
@@ -128,13 +183,58 @@ const app = {
     },
 
     refreshUI: function() {
-        const dataInternal = this.eventsData.filter(d => d.Tipe !== 'Eksternal');
+        const dataInternal = this.eventsData.filter(d => d.Tipe !== 'Eksternal' && d.Tipe !== 'Dokumentasi');
         const dataEksternal = this.eventsData.filter(d => d.Tipe === 'Eksternal');
+        const dataDokumentasi = this.eventsData.filter(d => d.Tipe === 'Dokumentasi');
 
         if (this.table) { this.table.clear(); this.table.rows.add(dataInternal); this.table.draw(); }
         if (this.tableExt) { this.tableExt.clear(); this.tableExt.rows.add(dataEksternal); this.tableExt.draw(); }
-        if (this.calendar) { this.calendar.removeAllEvents(); this.calendar.addEventSource(this.formatEventsForCalendar(this.eventsData)); }
+        if (this.calendar) { this.calendar.removeAllEvents(); this.calendar.addEventSource(this.formatEventsForCalendar(this.eventsData.filter(d => d.Tipe !== 'Dokumentasi'))); }
         
+        // Render Tabel Dokumentasi
+        if ($.fn.DataTable.isDataTable('#dataTableDok')) $('#dataTableDok').DataTable().destroy();
+        this.tableDok = $('#dataTableDok').DataTable({
+            data: dataDokumentasi, responsive: true, scrollX: true,
+            columns: [
+                { data: null, className: 'text-center', render: (d, t, r, m) => m.row + 1 },
+                { data: 'Nama Kegiatan', className: 'fw-bold text-dark' },
+                { data: 'Tanggal Mulai', render: d => {
+                    const iso = parseToISODate(d);
+                    return iso ? new Date(iso).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+                }},
+                { data: 'URL Foto (JSON)', className: 'text-center', render: urls => {
+                    let count = 0;
+                    try { count = urls ? JSON.parse(urls).length : 0; } catch(e){}
+                    return count > 0 ? `<span class="badge bg-success">${count} Foto</span>` : '-';
+                }},
+                { data: 'ID (UUID)', className: 'text-center', render: (id) => `
+                    <button class="btn btn-sm btn-info text-white shadow-sm" onclick="app.lihatGaleri('${id}')"><i class="fas fa-images me-1"></i> Lihat Galeri</button>`
+                }
+            ]
+        });
+
+        // Render Kalender Dokumentasi
+        if (this.calendarDok) this.calendarDok.destroy();
+        const calDokEvents = dataDokumentasi.map(item => {
+            let startStr = parseToISODate(item['Tanggal Mulai']);
+            let endStr = parseToISODate(item['Tanggal Selesai']);
+            let end = new Date(endStr); end.setDate(end.getDate() + 1);
+            return {
+                title: item['Nama Kegiatan'],
+                start: startStr, end: end.toISOString().split('T')[0],
+                allDay: true, backgroundColor: '#198754', borderColor: '#198754'
+            };
+        });
+        
+        const elDok = document.getElementById('calendar-dokumentasi');
+        if (elDok) {
+            this.calendarDok = new FullCalendar.Calendar(elDok, {
+                initialView: 'listMonth',
+                events: calDokEvents, height: 400
+            });
+            this.calendarDok.render();
+        }
+
         if(typeof DashboardAnalytics !== 'undefined') {
             DashboardAnalytics.populateCounters(this.eventsData);
             DashboardAnalytics.renderCharts(this.eventsData);
@@ -147,9 +247,7 @@ const app = {
         data.forEach(item => {
             const startStr = parseToISODate(item['Tanggal Mulai']);
             const endStr = parseToISODate(item['Tanggal Selesai']);
-            
-            const start = new Date(startStr); 
-            const end = new Date(endStr);
+            const start = new Date(startStr); const end = new Date(endStr);
             
             if(!isNaN(start) && !isNaN(end)) {
                 end.setDate(end.getDate() + 1);
@@ -171,7 +269,7 @@ const app = {
     },
 
     initDataTables: function() {
-        const dInt = this.eventsData.filter(d => d.Tipe !== 'Eksternal');
+        const dInt = this.eventsData.filter(d => d.Tipe !== 'Eksternal' && d.Tipe !== 'Dokumentasi');
         const dExt = this.eventsData.filter(d => d.Tipe === 'Eksternal');
         const dtDom = '<"row align-items-center mb-3"<"col-sm-12 col-md-6"B><"col-sm-12 col-md-6 d-flex justify-content-md-end"f>>rt<"row align-items-center mt-3"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7 d-flex justify-content-md-end"p>>';
         
@@ -240,7 +338,7 @@ const app = {
         this.calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
             initialView: 'dayGridMonth', firstDay: 0, 
             headerToolbar: { left: 'today prev,next', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' },
-            events: this.formatEventsForCalendar(this.eventsData), editable: true, droppable: true, selectable: true, dayMaxEvents: true,
+            events: this.formatEventsForCalendar(this.eventsData.filter(d => d.Tipe !== 'Dokumentasi')), editable: true, droppable: true, selectable: true, dayMaxEvents: true,
             dateClick: (i) => { this.openModal(); $('#tanggal_mulai').val(i.dateStr); },
             eventClick: (i) => { this.viewDetail(i.event.id); },
             eventDrop: (i) => { this.syncDragDrop(i.event); }, eventResize: (i) => { this.syncDragDrop(i.event); }
@@ -370,7 +468,7 @@ const app = {
         .then(res => res.json()).then(() => { this.toast('Waktu ditarik', 'info'); this.loadData().then(() => this.refreshUI()); });
     },
 
-   /* ==================================================
+    /* ==================================================
        SISTEM IMPORT CSV (KONVERSI AUTOMATIS & ANTI RATE LIMIT)
        ================================================== */
     handleCsvUpload: function(file) {
@@ -380,7 +478,6 @@ const app = {
             header: true, 
             skipEmptyLines: true,
             transformHeader: function(h) {
-                // Sangat Penting: Menghapus Byte Order Mark (BOM) & Spasi
                 return h.replace(/^\uFEFF/, '').trim();
             },
             complete: async (results) => {
@@ -435,7 +532,6 @@ const app = {
             $('#import-progress').css('width', percent + '%').text(percent + '%');
             $('#import-status').text(`Memproses ${i + 1} dari ${total}`);
 
-            // FITUR PENTING: JEDA 400ms AGAR SERVER GOOGLE CALENDAR TIDAK MEMBLOKIR (RATE LIMIT)
             await sleep(400); 
         }
 
@@ -444,6 +540,89 @@ const app = {
             html: `Jadwal Internal ditambahkan: <b class="text-success">${successCount}</b><br>Gagal / Duplikat: <b class="text-danger">${errorCount}</b>`,
             icon: errorCount > 0 ? 'warning' : 'success', confirmButtonText: 'Selesai'
         }).then(() => { this.loadData().then(() => this.refreshUI()); });
+    },
+
+    /* ==================================================
+       SISTEM DOKUMENTASI KEGIATAN & KOMPRES FOTO
+       ================================================== */
+    compressImage: function(file) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 800; 
+                    const scaleSize = MAX_WIDTH / img.width;
+                    canvas.width = MAX_WIDTH;
+                    canvas.height = img.height * scaleSize;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                    resolve({
+                        data: dataUrl.split(',')[1],
+                        mime: 'image/jpeg'
+                    });
+                }
+            };
+        });
+    },
+
+    openDokumentasiModal: function() {
+        $('#dokumentasiForm')[0].reset();
+        $('#dok_id').val('');
+        $('#dok_warning').text('');
+        $('#dokumentasiModal').modal('show');
+    },
+
+    lihatGaleri: function(id) {
+        const item = this.eventsData.find(d => d['ID (UUID)'] === id);
+        if (!item) return;
+        
+        let urls = [];
+        try { urls = JSON.parse(item['URL Foto (JSON)']); } catch(e) {}
+        
+        if (urls.length === 0) return Swal.fire('Kosong', 'Tidak ada foto untuk kegiatan ini.', 'info');
+
+        let carouselIndicators = '';
+        let carouselItems = '';
+
+        urls.forEach((url, index) => {
+            const active = index === 0 ? 'active' : '';
+            carouselIndicators += `<button type="button" data-bs-target="#dokCarousel" data-bs-slide-to="${index}" class="${active}"></button>`;
+            carouselItems += `
+                <div class="carousel-item ${active}">
+                    <img src="${url}" class="d-block w-100 rounded" style="max-height: 400px; object-fit: contain; background: #000;" alt="Foto ${index+1}">
+                    <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded p-2 mt-2">
+                        <a href="${url}" target="_blank" class="btn btn-sm btn-light fw-bold"><i class="fas fa-download me-1"></i> Buka Foto Resolusi Penuh</a>
+                    </div>
+                </div>`;
+        });
+
+        const htmlContent = `
+            <div class="text-start mb-3"><b>Deskripsi:</b><br>${item.Deskripsi || '-'}</div>
+            <div id="dokCarousel" class="carousel slide" data-bs-ride="carousel">
+                <div class="carousel-indicators">${carouselIndicators}</div>
+                <div class="carousel-inner shadow-sm">${carouselItems}</div>
+                <button class="carousel-control-prev" type="button" data-bs-target="#dokCarousel" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#dokCarousel" data-bs-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                </button>
+            </div>
+        `;
+
+        Swal.fire({
+            title: item['Nama Kegiatan'], 
+            html: htmlContent,
+            width: '800px', 
+            showConfirmButton: false, 
+            showCloseButton: true
+        });
     },
 
     /* ==================================================
