@@ -518,8 +518,8 @@
                             <!-- VIEW 3: DATA TABLES -->
                             <div id="table-view" class="view-section d-none mb-4">
                                 <!-- ==========================================
-         KARTU 1: TABEL KEGIATAN INTERNAL
-         ========================================== -->
+                                KARTU 1: TABEL KEGIATAN INTERNAL
+                                ========================================== -->
                                 <div class="card shadow-sm border-0 mb-4">
                                     <div
                                         class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center py-3"
@@ -609,8 +609,8 @@
                                 </div>
 
                                 <!-- ==========================================
-         KARTU 2: TABEL KEGIATAN EKSTERNAL
-         ========================================== -->
+                                KARTU 2: TABEL KEGIATAN EKSTERNAL
+                                ========================================== -->
                                 <div class="card shadow-sm border-0">
                                     <div
                                         class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center py-3"
@@ -690,52 +690,54 @@
                                     </div>
                                 </div>
 
-
-
-<!-- VIEW 4: DOKUMENTASI KEGIATAN -->
-<div id="dokumentasi-view" class="view-section d-none mb-4">
-    <div class="row g-4">
-        <!-- Tabel Dokumentasi -->
-        <div class="col-xl-8">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center py-3">
-                    <h5 class="mb-0 text-primary fw-bold"><i data-feather="camera" class="me-2"></i> Arsip Dokumentasi</h5>
-                    <button class="btn btn-sm btn-primary fw-bold shadow-sm" onclick="app.openDokumentasiModal()">
-                        <i data-feather="plus" class="me-1"></i> Tambah Dokumentasi
-                    </button>
-                </div>
-                <div class="card-body p-4 table-responsive">
-                    <table id="dataTableDok" class="table table-striped table-hover w-100 align-middle">
-                        <thead class="table-light">
-                            <tr>
-                                <th>No</th>
-                                <th>Nama Kegiatan</th>
-                                <th>Tanggal</th>
-                                <th class="text-center">Galeri</th>
-                                <th class="text-center">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        <!-- Kalender Dokumentasi -->
-        <div class="col-xl-4">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-header bg-transparent border-bottom py-3">
-                    <h5 class="mb-0 text-primary fw-bold"><i data-feather="calendar" class="me-2"></i> Kalender Dokumentasi</h5>
-                </div>
-                <div class="card-body p-3">
-                    <div id="calendar-dokumentasi"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-
                             </div>
+
+
+                            <!-- VIEW 4: DOKUMENTASI KEGIATAN -->
+                            <div id="dokumentasi-view" class="view-section d-none mb-4">
+                                <div class="row g-4">
+                                    <!-- Tabel Dokumentasi -->
+                                    <div class="col-xl-8">
+                                        <div class="card shadow-sm border-0 h-100">
+                                            <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center py-3">
+                                                <h5 class="mb-0 text-primary fw-bold"><i data-feather="camera" class="me-2"></i> Arsip Dokumentasi</h5>
+                                                <button class="btn btn-sm btn-primary fw-bold shadow-sm" onclick="app.openDokumentasiModal()">
+                                                    <i data-feather="plus" class="me-1"></i> Tambah Dokumentasi
+                                                </button>
+                                            </div>
+                                            <div class="card-body p-4 table-responsive">
+                                                <table id="dataTableDok" class="table table-striped table-hover w-100 align-middle">
+                                                    <thead class="table-light">
+                                                        <tr>
+                                                            <th>No</th>
+                                                            <th>Nama Kegiatan</th>
+                                                            <th>Tanggal</th>
+                                                            <th class="text-center">Galeri</th>
+                                                            <th class="text-center">Aksi</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody></tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Kalender Dokumentasi -->
+                                    <div class="col-xl-4">
+                                        <div class="card shadow-sm border-0 h-100">
+                                            <div class="card-header bg-transparent border-bottom py-3">
+                                                <h5 class="mb-0 text-primary fw-bold"><i data-feather="calendar" class="me-2"></i> Kalender Dokumentasi</h5>
+                                            </div>
+                                            <div class="card-body p-3">
+                                                <div id="calendar-dokumentasi"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+
+
+
                         </div>
                     </div>
                 </main>
@@ -749,8 +751,6 @@
                 </footer>
             </div>
         </div>
-
-        <!-- Modal Form Kegiatan -->
 
         <!-- Modal Form Kegiatan baru -->
         <div class="modal fade" id="kegiatanModal" tabindex="-1" aria-hidden="true">
@@ -931,51 +931,49 @@
             </div>
         </div>
 
-
-
-<!-- Modal Form Dokumentasi -->
-<div class="modal fade" id="dokumentasiModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header border-bottom-0">
-                <h5 class="modal-title fw-bold text-primary">Upload Dokumentasi</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <!-- Modal Form Dokumentasi -->
+        <div class="modal fade" id="dokumentasiModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header border-bottom-0">
+                        <h5 class="modal-title fw-bold text-primary">Upload Dokumentasi</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form id="dokumentasiForm">
+                        <div class="modal-body pb-0">
+                            <input type="hidden" id="dok_id">
+                            <div class="mb-3">
+                                <label class="form-label">Nama Kegiatan</label>
+                                <input type="text" class="form-control" id="dok_nama" required placeholder="Contoh: Rapat Kerja 2026">
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <label class="form-label">Mulai</label>
+                                    <input type="text" class="form-control flatpickr-date" id="dok_mulai" required>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Selesai</label>
+                                    <input type="text" class="form-control flatpickr-date" id="dok_selesai" required>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Deskripsi Kegiatan</label>
+                                <textarea class="form-control" id="dok_deskripsi" rows="3" required placeholder="Ceritakan ringkasan kegiatan..."></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Upload Foto (Maks 10 Foto)</label>
+                                <input class="form-control" type="file" id="dok_fotos" accept="image/png, image/jpeg" multiple required>
+                                <div class="form-text text-danger" id="dok_warning"></div>
+                            </div>
+                        </div>
+                        <div class="modal-footer border-top-0 pt-4">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                            <button type="submit" class="btn btn-primary px-4" id="btnSaveDok">Simpan & Upload</button>
+                        </div>
+                    </form>
+                </div>
             </div>
-            <form id="dokumentasiForm">
-                <div class="modal-body pb-0">
-                    <input type="hidden" id="dok_id">
-                    <div class="mb-3">
-                        <label class="form-label">Nama Kegiatan</label>
-                        <input type="text" class="form-control" id="dok_nama" required placeholder="Contoh: Rapat Kerja 2026">
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-6">
-                            <label class="form-label">Mulai</label>
-                            <input type="text" class="form-control flatpickr-date" id="dok_mulai" required>
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label">Selesai</label>
-                            <input type="text" class="form-control flatpickr-date" id="dok_selesai" required>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Deskripsi Kegiatan</label>
-                        <textarea class="form-control" id="dok_deskripsi" rows="3" required placeholder="Ceritakan ringkasan kegiatan..."></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Upload Foto (Maks 10 Foto)</label>
-                        <input class="form-control" type="file" id="dok_fotos" accept="image/png, image/jpeg" multiple required>
-                        <div class="form-text text-danger" id="dok_warning"></div>
-                    </div>
-                </div>
-                <div class="modal-footer border-top-0 pt-4">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-primary px-4" id="btnSaveDok">Simpan & Upload</button>
-                </div>
-            </form>
         </div>
-    </div>
-</div>
 
         <!-- Core Template Scripts -->
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
