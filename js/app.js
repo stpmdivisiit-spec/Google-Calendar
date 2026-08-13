@@ -4,27 +4,22 @@
  */
 const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxb_eQbMQtpR3sS6IZiMLqcIzOjtzB2RZ9CSIDr6Yn9UHdTUw4XIw-nwsOIpXK8xLYucg/exec'; 
 
-// HELPER: Konversi DD/MM/YYYY atau YYYY-MM-DD menjadi ISO Format (YYYY-MM-DD)
 function parseToISODate(dateStr) {
     if (!dateStr) return '';
     dateStr = String(dateStr).trim();
-    
     if (/^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(dateStr)) {
         const parts = dateStr.split(/[-/]/);
         return `${parts[0]}-${String(parts[1]).padStart(2, '0')}-${String(parts[2]).padStart(2, '0')}`;
     }
-    
     if (/^\d{1,2}[-/]\d{1,2}[-/]\d{4}$/.test(dateStr)) {
         const parts = dateStr.split(/[-/]/);
         return `${parts[2]}-${String(parts[1]).padStart(2, '0')}-${String(parts[0]).padStart(2, '0')}`;
     }
-    
     const dt = new Date(dateStr);
     if (!isNaN(dt.getTime())) return dt.toISOString().split('T')[0];
     return '';
 }
 
-// HELPER: Penunda (Sleep) untuk mencegah Google Calendar memblokir sistem (Rate Limiting)
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 const app = {
@@ -123,7 +118,7 @@ const app = {
         $('#fileCsv').on('change', (e) => { const file = e.target.files[0]; if (!file) return; this.handleCsvUpload(file); $(e.target).val(''); });
         $('#kegiatanForm').on('submit', (e) => { e.preventDefault(); this.saveEvent(); });
 
-        // Event Listener untuk Form Dokumentasi
+        // Event Listener untuk Upload Foto Dokumentasi
         $('#dok_fotos').on('change', function() {
             if (this.files.length > 10) {
                 $('#dok_warning').text('Maksimal hanya 10 foto yang diizinkan!');
@@ -167,7 +162,7 @@ const app = {
                     throw new Error(data.message);
                 }
             } catch (err) {
-                app.toast('Gagal mengupload dokumentasi.', 'error');
+                app.toast('Gagal mengupload. Pastikan ukuran total tidak melebihi batas.', 'error');
             } finally {
                 btn.prop('disabled', false).text('Simpan & Upload');
             }
@@ -213,7 +208,7 @@ const app = {
             ]
         });
 
-        // Render Kalender Dokumentasi
+        // Render Kalender Dokumentasi Mini
         if (this.calendarDok) this.calendarDok.destroy();
         const calDokEvents = dataDokumentasi.map(item => {
             let startStr = parseToISODate(item['Tanggal Mulai']);
@@ -282,7 +277,6 @@ const app = {
         if ($.fn.DataTable.isDataTable('#dataTable')) $('#dataTable').DataTable().destroy();
         if ($.fn.DataTable.isDataTable('#dataTableExt')) $('#dataTableExt').DataTable().destroy();
 
-        // TABEL INTERNAL
         this.table = $('#dataTable').DataTable({ 
             data: dInt, responsive: true, scrollX: true, dom: dtDom, buttons: getBtns(false),
             columns: [
@@ -307,7 +301,6 @@ const app = {
             ]
         });
 
-        // TABEL EKSTERNAL
         this.tableExt = $('#dataTableExt').DataTable({ 
             data: dExt, responsive: true, scrollX: true, dom: dtDom, buttons: getBtns(true),
             columns: [
@@ -468,29 +461,19 @@ const app = {
         .then(res => res.json()).then(() => { this.toast('Waktu ditarik', 'info'); this.loadData().then(() => this.refreshUI()); });
     },
 
-    /* ==================================================
-       SISTEM IMPORT CSV (KONVERSI AUTOMATIS & ANTI RATE LIMIT)
-       ================================================== */
     handleCsvUpload: function(file) {
         if (typeof Papa === 'undefined') return this.toast('Library CSV belum termuat.', 'error');
         
         Papa.parse(file, {
-            header: true, 
-            skipEmptyLines: true,
-            transformHeader: function(h) {
-                return h.replace(/^\uFEFF/, '').trim();
-            },
+            header: true, skipEmptyLines: true,
+            transformHeader: function(h) { return h.replace(/^\uFEFF/, '').trim(); },
             complete: async (results) => {
                 const data = results.data;
                 if (data.length === 0) return this.toast('File CSV kosong', 'warning');
-
                 const fileHeaders = Object.keys(data[0]);
                 const requiredHeaders = ['Unit', 'Nama Kegiatan', 'Tanggal Mulai', 'Tanggal Selesai', 'PIC'];
                 const isValid = requiredHeaders.every(h => fileHeaders.includes(h));
-
-                if (!isValid) {
-                    return Swal.fire('Format Salah', `Pastikan header CSV persis memiliki 5 kolom ini: <br><b>${requiredHeaders.join(', ')}</b>`, 'error');
-                }
+                if (!isValid) return Swal.fire('Format Salah', `Pastikan header CSV persis memiliki 5 kolom ini: <br><b>${requiredHeaders.join(', ')}</b>`, 'error');
                 this.processBulkImport(data);
             },
             error: () => { this.toast('Gagal membaca file CSV', 'error'); }
@@ -499,7 +482,6 @@ const app = {
 
     processBulkImport: async function(dataList) {
         const total = dataList.length; let successCount = 0; let errorCount = 0;
-
         Swal.fire({
             title: 'Mengimpor Kegiatan Internal...',
             html: `<div class="mb-3 text-warning fw-bold"><i class="fas fa-info-circle me-1"></i> Jangan tutup browser selama proses ini!</div>
@@ -510,16 +492,9 @@ const app = {
 
         for (let i = 0; i < total; i++) {
             const row = dataList[i];
-            
             const payload = {
-                id: "", 
-                tipe: 'Internal', 
-                deskripsi: '-',
-                unit: row['Unit'], 
-                nama_kegiatan: row['Nama Kegiatan'],
-                tanggal_mulai: parseToISODate(row['Tanggal Mulai']), 
-                tanggal_selesai: parseToISODate(row['Tanggal Selesai']), 
-                pic: row['PIC']
+                id: "", tipe: 'Internal', deskripsi: '-', unit: row['Unit'], nama_kegiatan: row['Nama Kegiatan'],
+                tanggal_mulai: parseToISODate(row['Tanggal Mulai']), tanggal_selesai: parseToISODate(row['Tanggal Selesai']), pic: row['PIC']
             };
 
             try {
@@ -531,7 +506,6 @@ const app = {
             const percent = Math.round(((i + 1) / total) * 100);
             $('#import-progress').css('width', percent + '%').text(percent + '%');
             $('#import-status').text(`Memproses ${i + 1} dari ${total}`);
-
             await sleep(400); 
         }
 
@@ -560,12 +534,8 @@ const app = {
                     canvas.height = img.height * scaleSize;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    
                     const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-                    resolve({
-                        data: dataUrl.split(',')[1],
-                        mime: 'image/jpeg'
-                    });
+                    resolve({ data: dataUrl.split(',')[1], mime: 'image/jpeg' });
                 }
             };
         });
@@ -616,15 +586,12 @@ const app = {
             </div>
         `;
 
-        Swal.fire({
-            title: item['Nama Kegiatan'], 
-            html: htmlContent,
-            width: '800px', 
-            showConfirmButton: false, 
-            showCloseButton: true
-        });
+        Swal.fire({ title: item['Nama Kegiatan'], html: htmlContent, width: '800px', showConfirmButton: false, showCloseButton: true });
     },
 
+    /* ==================================================
+       SISTEM RESET TOTAL (SAPU JAGAT)
+       ================================================== */
     resetSemuaData: function() {
         Swal.fire({
             title: '⚠️ BAHAYA: RESET TOTAL SISTEM?',
