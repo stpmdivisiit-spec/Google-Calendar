@@ -1,23 +1,13 @@
 /**
  * KONFIGURASI UTAMA - SIM KALENDER STPM SANTA URSULA
- * (VERSI DUAL-SHEET + INTEGRASI DOKUMENTASI & GALERI TANPA KOMPRESI)
+ * (SISTEMATIS TANGGAL ISO 8601: YYYY-MM-DD + DOKUMENTASI RAW UPLOAD)
  */
 const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxb_eQbMQtpR3sS6IZiMLqcIzOjtzB2RZ9CSIDr6Yn9UHdTUw4XIw-nwsOIpXK8xLYucg/exec'; 
 
-function parseToISODate(dateStr) {
+// Cukup memastikan format adalah string YYYY-MM-DD
+function ensureISODate(dateStr) {
     if (!dateStr) return '';
-    dateStr = String(dateStr).trim();
-    if (/^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(dateStr)) {
-        const parts = dateStr.split(/[-/]/);
-        return `${parts[0]}-${String(parts[1]).padStart(2, '0')}-${String(parts[2]).padStart(2, '0')}`;
-    }
-    if (/^\d{1,2}[-/]\d{1,2}[-/]\d{4}$/.test(dateStr)) {
-        const parts = dateStr.split(/[-/]/);
-        return `${parts[2]}-${String(parts[1]).padStart(2, '0')}-${String(parts[0]).padStart(2, '0')}`;
-    }
-    const dt = new Date(dateStr);
-    if (!isNaN(dt.getTime())) return dt.toISOString().split('T')[0];
-    return '';
+    return String(dateStr).trim().split('T')[0]; // Akan selalu menghasilkan YYYY-MM-DD yang bersih
 }
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -63,11 +53,12 @@ const app = {
             const unitMatch = filterUnit === "" || rowData.Unit === filterUnit;
             let dateMatch = true;
             if (filterDate) {
-                const eventStart = new Date(rowData['Tanggal Mulai']).setHours(0,0,0,0);
+                // Membandingkan YYYY-MM-DD secara string, sangat aman dari pergeseran zona waktu
+                const eventStart = rowData['Tanggal Mulai']; 
                 if (filterDate.includes(' to ')) {
                     const dates = filterDate.split(' to ');
-                    dateMatch = (eventStart >= new Date(dates[0]).setHours(0,0,0,0) && eventStart <= new Date(dates[1]).setHours(23,59,59,999));
-                } else dateMatch = (eventStart === new Date(filterDate).setHours(0,0,0,0));
+                    dateMatch = (eventStart >= dates[0] && eventStart <= dates[1]);
+                } else dateMatch = (eventStart === filterDate);
             }
             return unitMatch && dateMatch;
         });
@@ -118,7 +109,6 @@ const app = {
         $('#fileCsv').on('change', (e) => { const file = e.target.files[0]; if (!file) return; this.handleCsvUpload(file); $(e.target).val(''); });
         $('#kegiatanForm').on('submit', (e) => { e.preventDefault(); this.saveEvent(); });
 
-        // Event Listener untuk Upload Foto Dokumentasi
         $('#dok_fotos').on('change', function() {
             if (this.files.length > 10) {
                 $('#dok_warning').text('Maksimal hanya 10 foto yang diizinkan!');
@@ -133,7 +123,7 @@ const app = {
             const btn = $('#btnSaveDok');
             const files = $('#dok_fotos')[0].files;
             
-            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i> Mengupload file original...');
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i> Mengupload ke Drive...');
             
             try {
                 let fotoBase64Array = [];
@@ -145,8 +135,8 @@ const app = {
                 const payload = {
                     nama_kegiatan: $('#dok_nama').val(),
                     deskripsi: $('#dok_deskripsi').val(),
-                    tanggal_mulai: parseToISODate($('#dok_mulai').val()),
-                    tanggal_selesai: parseToISODate($('#dok_selesai').val()),
+                    tanggal_mulai: ensureISODate($('#dok_mulai').val()),
+                    tanggal_selesai: ensureISODate($('#dok_selesai').val()),
                     fotos: fotoBase64Array
                 };
 
@@ -186,7 +176,6 @@ const app = {
         if (this.tableExt) { this.tableExt.clear(); this.tableExt.rows.add(dataEksternal); this.tableExt.draw(); }
         if (this.calendar) { this.calendar.removeAllEvents(); this.calendar.addEventSource(this.formatEventsForCalendar(this.eventsData.filter(d => d.Tipe !== 'Dokumentasi'))); }
         
-        // Render Tabel Dokumentasi
         if ($.fn.DataTable.isDataTable('#dataTableDok')) $('#dataTableDok').DataTable().destroy();
         this.tableDok = $('#dataTableDok').DataTable({
             data: dataDokumentasi, responsive: true, scrollX: true,
@@ -194,12 +183,11 @@ const app = {
                 { data: null, className: 'text-center', render: (d, t, r, m) => m.row + 1 },
                 { data: 'Nama Kegiatan', className: 'fw-bold text-dark' },
                 { data: 'Tanggal Mulai', render: d => {
-                    const iso = parseToISODate(d);
-                    return iso ? new Date(iso).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+                    if(!d) return '-';
+                    const parts = d.split('-'); return `${parts[2]}/${parts[1]}/${parts[0]}`; // Menampilkan format 10/08/2026 yang rapi
                 }},
                 { data: 'URL Foto (JSON)', className: 'text-center', render: urls => {
-                    let count = 0;
-                    try { count = urls ? JSON.parse(urls).length : 0; } catch(e){}
+                    let count = 0; try { count = urls ? JSON.parse(urls).length : 0; } catch(e){}
                     return count > 0 ? `<span class="badge bg-success">${count} Foto</span>` : '-';
                 }},
                 { data: 'ID (UUID)', className: 'text-center', render: (id) => `
@@ -208,15 +196,17 @@ const app = {
             ]
         });
 
-        // Render Kalender Dokumentasi Mini
         if (this.calendarDok) this.calendarDok.destroy();
         const calDokEvents = dataDokumentasi.map(item => {
-            let startStr = parseToISODate(item['Tanggal Mulai']);
-            let endStr = parseToISODate(item['Tanggal Selesai']);
-            let end = new Date(endStr); end.setDate(end.getDate() + 1);
+            const startStr = item['Tanggal Mulai'];
+            // Tambahkan +1 hari khusus untuk FullCalendar render (karena EndDate FullCalendar bersifat eksklusif)
+            const [y, m, d] = item['Tanggal Selesai'].split('-');
+            const endDate = new Date(y, m - 1, d); endDate.setDate(endDate.getDate() + 1);
+            const endStr = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
+            
             return {
                 title: item['Nama Kegiatan'],
-                start: startStr, end: end.toISOString().split('T')[0],
+                start: startStr, end: endStr,
                 allDay: true, backgroundColor: '#198754', borderColor: '#198754'
             };
         });
@@ -240,18 +230,19 @@ const app = {
     formatEventsForCalendar: function(data) {
         let validEvents = [];
         data.forEach(item => {
-            const startStr = parseToISODate(item['Tanggal Mulai']);
-            const endStr = parseToISODate(item['Tanggal Selesai']);
-            const start = new Date(startStr); const end = new Date(endStr);
-            
-            if(!isNaN(start) && !isNaN(end)) {
-                end.setDate(end.getDate() + 1);
+            const startStr = item['Tanggal Mulai']; // CSV sudah format YYYY-MM-DD
+            if (startStr && item['Tanggal Selesai']) {
+                // Kalkulasi end date untuk FullCalendar (harus +1 Hari agar blok jadwalnya terisi penuh)
+                const [y, m, d] = item['Tanggal Selesai'].split('-');
+                const endDate = new Date(y, m - 1, d); endDate.setDate(endDate.getDate() + 1);
+                const endStr = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
+                
                 let isExt = item.Tipe === 'Eksternal';
                 validEvents.push({
                     id: item['ID (UUID)'], 
                     title: (isExt ? '[EKSTERNAL] ' : '') + `[${item.Unit}] ${item['Nama Kegiatan']}`,
                     start: startStr, 
-                    end: end.toISOString().split('T')[0], 
+                    end: endStr, 
                     allDay: true,
                     backgroundColor: isExt ? '#ffc107' : this.getUnitColorCode(item.Unit),
                     borderColor: isExt ? '#ffc107' : this.getUnitColorCode(item.Unit),
@@ -274,6 +265,14 @@ const app = {
             { extend: 'print', text: '<i class="fas fa-print me-1"></i> Print', className: isExt ? 'btn-purple mb-2' : 'btn btn-sm btn-outline-secondary mb-2' }
         ];
 
+        // Helper render tanggal DataTables dengan Format ID (10 Agu 2026)
+        const renderTanggalID = (d) => {
+            if(!d) return '-';
+            const [y, m, day] = d.split('-');
+            const dateObj = new Date(y, m - 1, day);
+            return dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+        };
+
         if ($.fn.DataTable.isDataTable('#dataTable')) $('#dataTable').DataTable().destroy();
         if ($.fn.DataTable.isDataTable('#dataTableExt')) $('#dataTableExt').DataTable().destroy();
 
@@ -283,14 +282,8 @@ const app = {
                 { data: null, className: 'text-center', defaultContent: '', render: (d, t, r, m) => m.row + 1 },
                 { data: 'Unit', defaultContent: '-' },
                 { data: 'Nama Kegiatan', className: 'fw-bold text-dark', defaultContent: '-' },
-                { data: 'Tanggal Mulai', defaultContent: '-', render: d => {
-                    const iso = parseToISODate(d);
-                    return iso ? new Date(iso).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
-                }},
-                { data: 'Tanggal Selesai', defaultContent: '-', render: d => {
-                    const iso = parseToISODate(d);
-                    return iso ? new Date(iso).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
-                }},
+                { data: 'Tanggal Mulai', defaultContent: '-', render: renderTanggalID },
+                { data: 'Tanggal Selesai', defaultContent: '-', render: renderTanggalID },
                 { data: 'PIC', defaultContent: '-' },
                 { data: 'ID (UUID)', className: 'text-center', defaultContent: '',
                   render: id => `<div class="d-flex justify-content-center gap-2">
@@ -308,14 +301,8 @@ const app = {
                 { data: 'Unit', defaultContent: '-', render: d => `<span class="badge bg-warning text-dark">${d}</span>` },
                 { data: 'Nama Kegiatan', className: 'fw-bold text-dark', defaultContent: '-' },
                 { data: 'Deskripsi Kegiatan', defaultContent: '-', render: d => d ? `<div style="white-space: normal; min-width: 200px;">${d}</div>` : '-' },
-                { data: 'Tanggal Mulai', defaultContent: '-', render: d => {
-                    const iso = parseToISODate(d);
-                    return iso ? new Date(iso).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
-                }},
-                { data: 'Tanggal Selesai', defaultContent: '-', render: d => {
-                    const iso = parseToISODate(d);
-                    return iso ? new Date(iso).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
-                }},
+                { data: 'Tanggal Mulai', defaultContent: '-', render: renderTanggalID },
+                { data: 'Tanggal Selesai', defaultContent: '-', render: renderTanggalID },
                 { data: 'PIC', defaultContent: '-' },
                 { data: 'ID (UUID)', className: 'text-center', defaultContent: '',
                   render: id => `<div class="d-flex justify-content-center gap-2">
@@ -352,10 +339,14 @@ const app = {
         const isExt = item.Tipe === 'Eksternal';
         const tipeStr = isExt ? 'Eksternal / Luar Kampus' : 'Internal STPM';
         
-        const isoMulai = parseToISODate(item['Tanggal Mulai']);
-        const isoSelesai = parseToISODate(item['Tanggal Selesai']);
-        const tglMulai = isoMulai ? new Date(isoMulai).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-';
-        const tglSelesai = isoSelesai ? new Date(isoSelesai).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-';
+        const renderTanggalID = (d) => {
+            if(!d) return '-';
+            const [y, m, day] = d.split('-');
+            return new Date(y, m - 1, day).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+        };
+
+        const tglMulai = renderTanggalID(item['Tanggal Mulai']);
+        const tglSelesai = renderTanggalID(item['Tanggal Selesai']);
         
         let htmlContent = `
             <table class="table table-sm table-bordered text-start mt-3">
@@ -386,8 +377,8 @@ const app = {
         $('#nama_kegiatan').val(item['Nama Kegiatan']);
         $('#deskripsi').val(item['Deskripsi Kegiatan']); 
         
-        $('#tanggal_mulai').val(parseToISODate(item['Tanggal Mulai']));
-        $('#tanggal_selesai').val(parseToISODate(item['Tanggal Selesai']));
+        $('#tanggal_mulai').val(item['Tanggal Mulai']);
+        $('#tanggal_selesai').val(item['Tanggal Selesai']);
         $('#pic').val(item.PIC).trigger('change'); 
         $('#kegiatanModal').modal('show');
     },
@@ -396,25 +387,20 @@ const app = {
         const payload = {
             id: $('#event_id').val(), tipe: $('#tipe_kegiatan').val(), unit: $('#unit').val(), 
             nama_kegiatan: $('#nama_kegiatan').val(), deskripsi: $('#deskripsi').val() || '', 
-            tanggal_mulai: parseToISODate($('#tanggal_mulai').val()), 
-            tanggal_selesai: parseToISODate($('#tanggal_selesai').val()), 
+            tanggal_mulai: ensureISODate($('#tanggal_mulai').val()), 
+            tanggal_selesai: ensureISODate($('#tanggal_selesai').val()), 
             pic: $('#pic').val()
         };
 
         const action = payload.id ? 'update' : 'add';
         const btn = $('#btnSave');
 
-        const newStart = new Date(payload.tanggal_mulai).getTime(); 
-        const newEnd = new Date(payload.tanggal_selesai).getTime();
         let conflicts = [];
-
         this.eventsData.forEach(ev => {
             if (payload.id && ev['ID (UUID)'] === payload.id) return;
-            const eStart = new Date(parseToISODate(ev['Tanggal Mulai'])).getTime(); 
-            const eEnd = new Date(parseToISODate(ev['Tanggal Selesai'])).getTime();
-            
-            if (!isNaN(eStart) && !isNaN(eEnd) && !isNaN(newStart) && !isNaN(newEnd)) {
-                if (newStart <= eEnd && eStart <= newEnd) conflicts.push(`• <b>${ev['Nama Kegiatan']}</b> <span class="text-primary">(${ev.Unit})</span>`);
+            // Membandingkan YYYY-MM-DD secara string alphabetis sangatlah aman
+            if (payload.tanggal_mulai <= ev['Tanggal Selesai'] && ev['Tanggal Mulai'] <= payload.tanggal_selesai) {
+                conflicts.push(`• <b>${ev['Nama Kegiatan']}</b> <span class="text-primary">(${ev.Unit})</span>`);
             }
         });
 
@@ -451,10 +437,16 @@ const app = {
 
     syncDragDrop: function(event) {
         const it = event.extendedProps;
+        // Pada FullCalendar, event.end itu eksklusif (+1 hari dari layar), jadi kita kurangi 1 hari
+        const endDt = event.end ? new Date(event.end.getTime() - 86400000) : event.start;
+        
+        const endY = endDt.getFullYear(); const endM = String(endDt.getMonth() + 1).padStart(2, '0'); const endD = String(endDt.getDate()).padStart(2, '0');
+        const startY = event.start.getFullYear(); const startM = String(event.start.getMonth() + 1).padStart(2, '0'); const startD = String(event.start.getDate()).padStart(2, '0');
+
         const payload = {
             id: it['ID (UUID)'], tipe: it.Tipe || 'Internal', unit: it.Unit, nama_kegiatan: it['Nama Kegiatan'], deskripsi: it['Deskripsi Kegiatan'] || '', 
-            tanggal_mulai: event.start.toISOString().split('T')[0],
-            tanggal_selesai: event.end ? new Date(event.end.getTime() - 86400000).toISOString().split('T')[0] : event.start.toISOString().split('T')[0],
+            tanggal_mulai: `${startY}-${startM}-${startD}`,
+            tanggal_selesai: `${endY}-${endM}-${endD}`,
             pic: it.PIC
         };
         fetch(GAS_WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: 'update', payload: payload }) })
@@ -494,7 +486,7 @@ const app = {
             const row = dataList[i];
             const payload = {
                 id: "", tipe: 'Internal', deskripsi: '-', unit: row['Unit'], nama_kegiatan: row['Nama Kegiatan'],
-                tanggal_mulai: parseToISODate(row['Tanggal Mulai']), tanggal_selesai: parseToISODate(row['Tanggal Selesai']), pic: row['PIC']
+                tanggal_mulai: ensureISODate(row['Tanggal Mulai']), tanggal_selesai: ensureISODate(row['Tanggal Selesai']), pic: row['PIC']
             };
 
             try {
@@ -517,7 +509,7 @@ const app = {
     },
 
     /* ==================================================
-       SISTEM DOKUMENTASI KEGIATAN (FILE MURNI TANPA KOMPRESI)
+       SISTEM DOKUMENTASI KEGIATAN RAW (TANPA KOMPRESI)
        ================================================== */
     fileToBase64: function(file) {
         return new Promise((resolve, reject) => {
