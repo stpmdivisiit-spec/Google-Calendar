@@ -1,13 +1,12 @@
 /**
  * KONFIGURASI UTAMA - SIM KALENDER STPM SANTA URSULA
- * (SISTEMATIS TANGGAL ISO 8601: YYYY-MM-DD + DOKUMENTASI RAW UPLOAD)
+ * (ANTI-CRASH & OPTIMASI LOADING MASSAL)
  */
 const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxb_eQbMQtpR3sS6IZiMLqcIzOjtzB2RZ9CSIDr6Yn9UHdTUw4XIw-nwsOIpXK8xLYucg/exec'; 
 
-// Cukup memastikan format adalah string YYYY-MM-DD
 function ensureISODate(dateStr) {
     if (!dateStr) return '';
-    return String(dateStr).trim().split('T')[0]; // Akan selalu menghasilkan YYYY-MM-DD yang bersih
+    return String(dateStr).trim().split('T')[0];
 }
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -20,13 +19,21 @@ const app = {
         this.setupDataTablesFilter();
         this.setupTemplateInteractions();
         
-        await this.loadData();
-        $('#app-loader').addClass('d-none'); 
-        $('#app-content').removeClass('d-none');
-        
-        this.initDataTables();
-        this.initCalendar();
-        if(typeof DashboardAnalytics !== 'undefined') DashboardAnalytics.init(this.eventsData);
+        try {
+            await this.loadData();
+        } catch (e) {
+            console.error("Gagal load data awal:", e);
+        } finally {
+            // FAIL-SAFE: Apapun yang terjadi, Loading Spinner wajib hilang!
+            $('#app-loader').addClass('d-none'); 
+            $('#app-content').removeClass('d-none');
+            
+            try { this.initDataTables(); } catch(e) { console.error("DataTables Error", e); }
+            try { this.initCalendar(); } catch(e) { console.error("Calendar Error", e); }
+            if(typeof DashboardAnalytics !== 'undefined') {
+                try { DashboardAnalytics.init(this.eventsData); } catch(e) { console.error("Analytics Error", e); }
+            }
+        }
     },
 
     setupPlugins: function() {
@@ -53,7 +60,6 @@ const app = {
             const unitMatch = filterUnit === "" || rowData.Unit === filterUnit;
             let dateMatch = true;
             if (filterDate) {
-                // Membandingkan YYYY-MM-DD secara string, sangat aman dari pergeseran zona waktu
                 const eventStart = rowData['Tanggal Mulai']; 
                 if (filterDate.includes(' to ')) {
                     const dates = filterDate.split(' to ');
@@ -123,7 +129,7 @@ const app = {
             const btn = $('#btnSaveDok');
             const files = $('#dok_fotos')[0].files;
             
-            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i> Mengupload ke Drive...');
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i> Mengupload file...');
             
             try {
                 let fotoBase64Array = [];
@@ -148,11 +154,9 @@ const app = {
                     $('#dokumentasiModal').modal('hide');
                     await app.loadData();
                     app.refreshUI();
-                } else {
-                    throw new Error(data.message);
-                }
+                } else throw new Error(data.message);
             } catch (err) {
-                app.toast('Gagal mengupload. Pastikan ukuran file tidak terlalu besar.', 'error');
+                app.toast('Gagal mengupload.', 'error');
             } finally {
                 btn.prop('disabled', false).text('Simpan & Upload');
             }
@@ -163,76 +167,79 @@ const app = {
         try {
             const response = await fetch(GAS_WEB_APP_URL);
             const json = await response.json();
-            this.eventsData = json.data || [];
-        } catch (error) { this.toast('Gagal memuat data dari server.', 'error'); }
+            
+            // Fail-safe: Membersihkan data kotor dari spreadsheet
+            this.eventsData = (json.data || []).filter(item => item['Tanggal Mulai'] && item['Tanggal Selesai']);
+        } catch (error) { 
+            this.toast('Gagal memuat data dari server.', 'error'); 
+            this.eventsData = []; 
+        }
     },
 
     refreshUI: function() {
-        const dataInternal = this.eventsData.filter(d => d.Tipe !== 'Eksternal' && d.Tipe !== 'Dokumentasi');
-        const dataEksternal = this.eventsData.filter(d => d.Tipe === 'Eksternal');
-        const dataDokumentasi = this.eventsData.filter(d => d.Tipe === 'Dokumentasi');
+        try {
+            const dataInternal = this.eventsData.filter(d => d.Tipe !== 'Eksternal' && d.Tipe !== 'Dokumentasi');
+            const dataEksternal = this.eventsData.filter(d => d.Tipe === 'Eksternal');
+            const dataDokumentasi = this.eventsData.filter(d => d.Tipe === 'Dokumentasi');
 
-        if (this.table) { this.table.clear(); this.table.rows.add(dataInternal); this.table.draw(); }
-        if (this.tableExt) { this.tableExt.clear(); this.tableExt.rows.add(dataEksternal); this.tableExt.draw(); }
-        if (this.calendar) { this.calendar.removeAllEvents(); this.calendar.addEventSource(this.formatEventsForCalendar(this.eventsData.filter(d => d.Tipe !== 'Dokumentasi'))); }
-        
-        if ($.fn.DataTable.isDataTable('#dataTableDok')) $('#dataTableDok').DataTable().destroy();
-        this.tableDok = $('#dataTableDok').DataTable({
-            data: dataDokumentasi, responsive: true, scrollX: true,
-            columns: [
-                { data: null, className: 'text-center', render: (d, t, r, m) => m.row + 1 },
-                { data: 'Nama Kegiatan', className: 'fw-bold text-dark' },
-                { data: 'Tanggal Mulai', render: d => {
-                    if(!d) return '-';
-                    const parts = d.split('-'); return `${parts[2]}/${parts[1]}/${parts[0]}`; // Menampilkan format 10/08/2026 yang rapi
-                }},
-                { data: 'URL Foto (JSON)', className: 'text-center', render: urls => {
-                    let count = 0; try { count = urls ? JSON.parse(urls).length : 0; } catch(e){}
-                    return count > 0 ? `<span class="badge bg-success">${count} Foto</span>` : '-';
-                }},
-                { data: 'ID (UUID)', className: 'text-center', render: (id) => `
-                    <button class="btn btn-sm btn-info text-white shadow-sm" onclick="app.lihatGaleri('${id}')"><i class="fas fa-images me-1"></i> Lihat Galeri</button>`
-                }
-            ]
-        });
-
-        if (this.calendarDok) this.calendarDok.destroy();
-        const calDokEvents = dataDokumentasi.map(item => {
-            const startStr = item['Tanggal Mulai'];
-            // Tambahkan +1 hari khusus untuk FullCalendar render (karena EndDate FullCalendar bersifat eksklusif)
-            const [y, m, d] = item['Tanggal Selesai'].split('-');
-            const endDate = new Date(y, m - 1, d); endDate.setDate(endDate.getDate() + 1);
-            const endStr = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
+            if (this.table) { this.table.clear(); this.table.rows.add(dataInternal); this.table.draw(); }
+            if (this.tableExt) { this.tableExt.clear(); this.tableExt.rows.add(dataEksternal); this.tableExt.draw(); }
+            if (this.calendar) { this.calendar.removeAllEvents(); this.calendar.addEventSource(this.formatEventsForCalendar(this.eventsData.filter(d => d.Tipe !== 'Dokumentasi'))); }
             
-            return {
-                title: item['Nama Kegiatan'],
-                start: startStr, end: endStr,
-                allDay: true, backgroundColor: '#198754', borderColor: '#198754'
-            };
-        });
-        
-        const elDok = document.getElementById('calendar-dokumentasi');
-        if (elDok) {
-            this.calendarDok = new FullCalendar.Calendar(elDok, {
-                initialView: 'listMonth',
-                events: calDokEvents, height: 400
+            if ($.fn.DataTable.isDataTable('#dataTableDok')) $('#dataTableDok').DataTable().destroy();
+            this.tableDok = $('#dataTableDok').DataTable({
+                data: dataDokumentasi, responsive: true, scrollX: true, deferRender: true,
+                columns: [
+                    { data: null, className: 'text-center', render: (d, t, r, m) => m.row + 1 },
+                    { data: 'Nama Kegiatan', className: 'fw-bold text-dark' },
+                    { data: 'Tanggal Mulai', render: d => {
+                        if(!d) return '-';
+                        const parts = d.split('-'); return `${parts[2]}/${parts[1]}/${parts[0]}`;
+                    }},
+                    { data: 'URL Foto (JSON)', className: 'text-center', render: urls => {
+                        let count = 0; try { count = urls ? JSON.parse(urls).length : 0; } catch(e){}
+                        return count > 0 ? `<span class="badge bg-success">${count} Foto</span>` : '-';
+                    }},
+                    { data: 'ID (UUID)', className: 'text-center', render: (id) => `
+                        <button class="btn btn-sm btn-info text-white shadow-sm" onclick="app.lihatGaleri('${id}')"><i class="fas fa-images me-1"></i> Lihat Galeri</button>`
+                    }
+                ]
             });
-            this.calendarDok.render();
-        }
 
-        if(typeof DashboardAnalytics !== 'undefined') {
-            DashboardAnalytics.populateCounters(this.eventsData);
-            DashboardAnalytics.renderCharts(this.eventsData);
-            DashboardAnalytics.detectConflicts(this.eventsData);
+            if (this.calendarDok) this.calendarDok.destroy();
+            const calDokEvents = dataDokumentasi.map(item => {
+                const startStr = item['Tanggal Mulai'];
+                const [y, m, d] = item['Tanggal Selesai'].split('-');
+                const endDate = new Date(y, m - 1, d); endDate.setDate(endDate.getDate() + 1);
+                const endStr = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
+                
+                return {
+                    title: item['Nama Kegiatan'], start: startStr, end: endStr,
+                    allDay: true, backgroundColor: '#198754', borderColor: '#198754'
+                };
+            });
+            
+            const elDok = document.getElementById('calendar-dokumentasi');
+            if (elDok) {
+                this.calendarDok = new FullCalendar.Calendar(elDok, { initialView: 'listMonth', events: calDokEvents, height: 400 });
+                this.calendarDok.render();
+            }
+
+            if(typeof DashboardAnalytics !== 'undefined') {
+                DashboardAnalytics.populateCounters(this.eventsData);
+                DashboardAnalytics.renderCharts(this.eventsData);
+                DashboardAnalytics.detectConflicts(this.eventsData);
+            }
+        } catch(e) {
+            console.error("Error UI Refresh:", e);
         }
     },
 
     formatEventsForCalendar: function(data) {
         let validEvents = [];
         data.forEach(item => {
-            const startStr = item['Tanggal Mulai']; // CSV sudah format YYYY-MM-DD
+            const startStr = item['Tanggal Mulai'];
             if (startStr && item['Tanggal Selesai']) {
-                // Kalkulasi end date untuk FullCalendar (harus +1 Hari agar blok jadwalnya terisi penuh)
                 const [y, m, d] = item['Tanggal Selesai'].split('-');
                 const endDate = new Date(y, m - 1, d); endDate.setDate(endDate.getDate() + 1);
                 const endStr = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
@@ -241,13 +248,10 @@ const app = {
                 validEvents.push({
                     id: item['ID (UUID)'], 
                     title: (isExt ? '[EKSTERNAL] ' : '') + `[${item.Unit}] ${item['Nama Kegiatan']}`,
-                    start: startStr, 
-                    end: endStr, 
-                    allDay: true,
+                    start: startStr, end: endStr, allDay: true,
                     backgroundColor: isExt ? '#ffc107' : this.getUnitColorCode(item.Unit),
                     borderColor: isExt ? '#ffc107' : this.getUnitColorCode(item.Unit),
-                    textColor: isExt ? '#000000' : '#ffffff', 
-                    extendedProps: item
+                    textColor: isExt ? '#000000' : '#ffffff', extendedProps: item
                 });
             }
         });
@@ -265,7 +269,6 @@ const app = {
             { extend: 'print', text: '<i class="fas fa-print me-1"></i> Print', className: isExt ? 'btn-purple mb-2' : 'btn btn-sm btn-outline-secondary mb-2' }
         ];
 
-        // Helper render tanggal DataTables dengan Format ID (10 Agu 2026)
         const renderTanggalID = (d) => {
             if(!d) return '-';
             const [y, m, day] = d.split('-');
@@ -276,8 +279,9 @@ const app = {
         if ($.fn.DataTable.isDataTable('#dataTable')) $('#dataTable').DataTable().destroy();
         if ($.fn.DataTable.isDataTable('#dataTableExt')) $('#dataTableExt').DataTable().destroy();
 
+        // Optimasi: deferRender true membuat loading ribuan baris menjadi hitungan milidetik
         this.table = $('#dataTable').DataTable({ 
-            data: dInt, responsive: true, scrollX: true, dom: dtDom, buttons: getBtns(false),
+            data: dInt, responsive: true, scrollX: true, deferRender: true, dom: dtDom, buttons: getBtns(false),
             columns: [
                 { data: null, className: 'text-center', defaultContent: '', render: (d, t, r, m) => m.row + 1 },
                 { data: 'Unit', defaultContent: '-' },
@@ -295,7 +299,7 @@ const app = {
         });
 
         this.tableExt = $('#dataTableExt').DataTable({ 
-            data: dExt, responsive: true, scrollX: true, dom: dtDom, buttons: getBtns(true),
+            data: dExt, responsive: true, scrollX: true, deferRender: true, dom: dtDom, buttons: getBtns(true),
             columns: [
                 { data: null, className: 'text-center', defaultContent: '', render: (d, t, r, m) => m.row + 1 },
                 { data: 'Unit', defaultContent: '-', render: d => `<span class="badge bg-warning text-dark">${d}</span>` },
@@ -398,7 +402,6 @@ const app = {
         let conflicts = [];
         this.eventsData.forEach(ev => {
             if (payload.id && ev['ID (UUID)'] === payload.id) return;
-            // Membandingkan YYYY-MM-DD secara string alphabetis sangatlah aman
             if (payload.tanggal_mulai <= ev['Tanggal Selesai'] && ev['Tanggal Mulai'] <= payload.tanggal_selesai) {
                 conflicts.push(`• <b>${ev['Nama Kegiatan']}</b> <span class="text-primary">(${ev.Unit})</span>`);
             }
@@ -437,9 +440,7 @@ const app = {
 
     syncDragDrop: function(event) {
         const it = event.extendedProps;
-        // Pada FullCalendar, event.end itu eksklusif (+1 hari dari layar), jadi kita kurangi 1 hari
         const endDt = event.end ? new Date(event.end.getTime() - 86400000) : event.start;
-        
         const endY = endDt.getFullYear(); const endM = String(endDt.getMonth() + 1).padStart(2, '0'); const endD = String(endDt.getDate()).padStart(2, '0');
         const startY = event.start.getFullYear(); const startM = String(event.start.getMonth() + 1).padStart(2, '0'); const startD = String(event.start.getDate()).padStart(2, '0');
 
@@ -505,12 +506,9 @@ const app = {
             title: 'Impor Selesai!',
             html: `Jadwal Internal ditambahkan: <b class="text-success">${successCount}</b><br>Gagal / Duplikat: <b class="text-danger">${errorCount}</b>`,
             icon: errorCount > 0 ? 'warning' : 'success', confirmButtonText: 'Selesai'
-        }).then(() => { this.loadData().then(() => this.refreshUI()); });
+        }).then(() => { window.location.reload(); });
     },
 
-    /* ==================================================
-       SISTEM DOKUMENTASI KEGIATAN RAW (TANPA KOMPRESI)
-       ================================================== */
     fileToBase64: function(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -519,10 +517,7 @@ const app = {
                 const result = reader.result;
                 const base64Data = result.split(',')[1];
                 const mimeType = file.type || result.split(';')[0].split(':')[1];
-                resolve({
-                    data: base64Data,
-                    mime: mimeType
-                });
+                resolve({ data: base64Data, mime: mimeType });
             };
             reader.onerror = (error) => reject(error);
         });
@@ -554,7 +549,7 @@ const app = {
                 <div class="carousel-item ${active}">
                     <img src="${url}" class="d-block w-100 rounded" style="max-height: 400px; object-fit: contain; background: #000;" alt="Foto ${index+1}">
                     <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded p-2 mt-2">
-                        <a href="${url}" target="_blank" class="btn btn-sm btn-light fw-bold"><i class="fas fa-download me-1"></i> Buka Foto Resolusi Penuh</a>
+                        <a href="${url}" target="_blank" class="btn btn-sm btn-light fw-bold"><i class="fas fa-download me-1"></i> Buka Resolusi Penuh</a>
                     </div>
                 </div>`;
         });
@@ -576,9 +571,6 @@ const app = {
         Swal.fire({ title: item['Nama Kegiatan'], html: htmlContent, width: '800px', showConfirmButton: false, showCloseButton: true });
     },
 
-    /* ==================================================
-       SISTEM RESET TOTAL (SAPU JAGAT)
-       ================================================== */
     resetSemuaData: function() {
         Swal.fire({
             title: '⚠️ BAHAYA: RESET TOTAL SISTEM?',
